@@ -3,7 +3,7 @@ slug: bloom-go
 title: "Bloom filter pre-check in Go sync.Map: crossover point for miss latency under read-heavy load"
 archetype: implementation
 data_driven: true
-phase: P0
+phase: P1
 status: active
 
 # The framework is stack-agnostic — it only requires that the stack be declared, so gate

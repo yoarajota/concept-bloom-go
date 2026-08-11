@@ -11,24 +11,29 @@ readiness level that depended on it comes down (rule R1).
 
 ---
 
-### E-001 — TODO short title
+### E-001 — Literature survey
 
-**Claim.** TODO — the specific statement this evidence supports, and where it appears
-(README, `docs/01-theory.md § 5`, scenario `S-001`, …).
+**Claim.** The basic principles of Bloom filters and Go sync.Map are understood and documented
+from primary sources (docs/01-theory.md). TRL 1.
 
-**Environment:** OS / CPU / RAM / runtime version / dependency versions / dataset version.
-Pin everything that could move the number.
+**Environment:** Any machine with a web browser. No runtime.
 
 ```bash
-# runnable from the repository root on a clean checkout after the documented setup
-TODO
+# The search that produced the source list below:
+# 1. Searched: "bloom filter optimal k formula" → Broder & Mitzenmacher (SRC-003)
+# 2. Searched: "golang sync.map internal architecture" → Go source map.go (SRC-005)
+# 3. Searched: "golang sync.map miss latency issue 21035" → Go issue #21035 (SRC-006)
+# 4. Searched: "less hashing same performance" → Kirsch & Mitzenmacher (SRC-004)
+# 5. Searched: Go sync.Map docs at pkg.go.dev → sync.Map public API (SRC-002)
+# 6. Searched: "Bloom 1970 space time tradeoffs hash coding" → ACM page (SRC-001)
+grep -c "SRC-00" docs/01-theory.md
 ```
 
-**Result:** TODO — the observed output. For measurements, report variance across ≥ 5 runs
-(min / median / max, or mean ± sd). A single run is not a measurement.
+**Result:** Six sources documented: 1 abstract-only, 5 full-text. The grep returns ≥ 6
+(matches SRC-001 through SRC-006 source headings). Run date: 2026-08-10.
 
 **Status:** reproducing
-**Supports:** H-001, S-001, TRL 3 for `core`
+**Supports:** TRL 1 for `core`
 **Recorded:** 2026-08-10
 
 ---
