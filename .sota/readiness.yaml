@@ -28,6 +28,8 @@ drift_detection: >
   False-positive rate drifts upward as inserted keys exceed the filter's design capacity.
   Detected by periodically sampling the actual false-positive rate against the expected
   rate (m * (1 - e^(-kn/m))^k). Not implemented at TRL 1; stated for R11 compliance.
+
+integrations: []
   # Populated at P4. Every entry needs a rationale naming what blocks the next IRL level,
   # and a risk_ref when irl < 4.
   # - from: core
