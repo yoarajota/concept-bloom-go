@@ -123,9 +123,16 @@ variable-contention savings at the concurrency levels reachable on a single mach
 
 Filled at P5. Applies to every entry tagged as a benchmark.
 
-- **What is measured:** TODO
-- **Runs:** TODO (≥ 5), **warm-up:** TODO
-- **Held constant:** TODO
-- **Baseline configuration:** TODO — the same tuning effort was spent on the baseline as on
-  the concept; if not, say so, because it invalidates the comparison.
-- **Known measurement bias:** TODO
+- **What is measured:** Mean ns/op (Go benchmark runner) for sync.Map.Load() absent-key
+  operations, comparing plain sync.Map vs BloomMap (Bloom filter pre-check enabled).
+- **Runs:** 5 per goroutine count, **warm-up:** Go benchmark runner handles warm-up
+  automatically.
+- **Held constant:** 100,000 pre-populated keys, 100,000 miss keys, 1% Bloom FPR.
+  Background writer runs continuously in a separate goroutine.
+- **Baseline configuration:** Plain sync.Map with no Bloom filter. Both run on the same
+  Go 1.22.2 runtime, same hardware. Same environment, different data structure.
+- **Known measurement bias:** Go's benchmark runner reports mean time per operation, not
+  p95/p99 latency. The hypothesis was stated in terms of p99 miss latency; the mean is a
+  proxy (if the mean is higher, p99 is at least the mean for non-negative distributions).
+  Background writer contention is not controlled for — one goroutine's writer produces
+  variable dirty-map sizes.

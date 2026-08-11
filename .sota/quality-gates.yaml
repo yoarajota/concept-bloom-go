@@ -55,7 +55,7 @@ iso5055:
   last_run:
     date: "2026-08-10"
     exit_code: 0
-    commit: "78c3347f01f6f61069fb98f48289d28bd87185f8"
+    commit: "75c519a8d43f25fb88740f76eeceb9e92ce8f0ca"
   thresholds:
     cyclomatic_complexity_max: 15
     function_length_max: 60
@@ -96,12 +96,29 @@ complexity_ledger:
   #   justifies: [S-001]
   #   adr: D-003
 
-# Completed at P6. `suitable_for` is derived from the mapping table, never chosen.
-# diffusion:
-#   relative_advantage: {score: partial, justification: "..."}
-#   compatibility:      {score: strong,  justification: "..."}
-#   simplicity:         {score: weak,    justification: "..."}
-#   trialability:       {score: strong,  justification: "..."}
-#   observability:      {score: partial, justification: "..."}
-#   suitable_for: early-adopters
-#   chasm_blockers: [simplicity]
+diffusion:
+  relative_advantage:
+    score: weak
+    justification: "The Bloom filter pre-check is 6–25% slower than plain sync.Map at all
+      measured concurrency levels (E-003). There is no relative advantage to adopt it."
+  compatibility:
+    score: weak
+    justification: "core<->host is IRL 3: no timeouts, retries, or backpressure. The
+      BloomMap API (Load/Store) is compatible with sync.Map's but the semantics differ
+      (false-negative-free, not byte-for-byte identical)."
+  simplicity:
+    score: partial
+    justification: "The concept is narrow — one Bloom filter, one sync.Map wrapper. But
+      understanding when it helps (high miss rate + high concurrency + the right FPR)
+      requires domain knowledge about false-positive rates and sync.Map internals."
+  trialability:
+    score: strong
+    justification: "'go test ./bench/... -bench=.' reproduces the headline result from a
+      clean checkout in under 2 minutes (E-003). No external dependencies."
+  observability:
+    score: strong
+    justification: "Go benchmark output is direct and unfiltered; the performance penalty is
+      visible as higher ns/op in the benchmark output (E-003). The failure mode (Bloom filter
+      always found to be slower) is unambiguous."
+  suitable_for: none-yet
+  chasm_blockers: [relative_advantage, compatibility]
