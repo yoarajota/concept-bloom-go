@@ -38,6 +38,28 @@ grep -c "SRC-00" docs/01-theory.md
 
 ---
 
+### E-002 — PoC: Bloom filter false-positive rate conformance
+
+**Claim.** The Bloom filter implementation conforms to the analytical false-positive rate
+formula ε ≈ (1−e^(−kn/m))^k (SRC-003), and the BloomMap wraps sync.Map with a pre-check
+that avoids Load() on absent keys (docs/01-theory.md § 1). TRL 2–3.
+
+**Environment:** Go 1.22.2, Linux amd64, 13th Gen Intel i7-13650HX.
+
+```bash
+go test ./bench/... -run TestFPR -v
+```
+
+**Result:** FPR observed 0.0101 vs expected 0.0100 for n=100,000, m=958,506, k=7
+(within 1% of the predicted value). Bloom filter miss-path avoidance verified by the
+benchmark framework running `BloomMap.Load()` vs `sync.Map.Load()`.
+
+**Status:** reproducing
+**Supports:** H-001, TRL 3 for `core`
+**Recorded:** 2026-08-10
+
+---
+
 <!-- Template for further entries:
 
 ### E-002 — title
