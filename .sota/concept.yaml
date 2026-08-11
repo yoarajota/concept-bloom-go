@@ -1,0 +1,79 @@
+id: C-002
+slug: bloom-go
+title: "Bloom filter pre-check in Go sync.Map: crossover point for miss latency under read-heavy load"
+archetype: implementation
+data_driven: true
+phase: P0
+status: active
+
+# The framework is stack-agnostic — it only requires that the stack be declared, so gate
+# commands and verification paths are concrete rather than assumed. Any language is valid.
+stack:
+  language: Go
+  build_tool: make
+  test_runner: go test
+  quality_runner: "make quality"   # must match quality-gates.yaml -> iso5055.runner
+
+summary: >
+  Measures whether a Bloom filter pre-check reduces miss latency in Go's sync.Map under
+  read-heavy concurrent access, by probing the exact combination of goroutine count, miss rate,
+  and key cardinality at which the Bloom filter's avoidance of the sync.Map internal miss path
+  pays back its overhead.
+
+question: "What is the crossover point where a Bloom filter pre-check in Go's sync.Map reduces miss latency under read-heavy concurrent access?"
+
+domain:
+  - concurrency
+  - data-structures
+  - go
+
+# P0 selection screen. Every field must survive the question "is this a tautology?".
+screen:
+  problem_class: >
+    Approximate membership testing used as a contention-avoidance gate: consulting a small
+    probabilistic structure to decide whether to enter a larger concurrent data structure's
+    miss path, trading a known false-positive rate for reduced lock contention on the target
+    structure's internal machinery.
+  incumbent: >
+    A plain Go sync.Map accessed via Load() for every key, irrespective of whether the key
+    is present. sync.Map's internal design (read map + dirty map + per-miss-path mutex
+    acquisition) keeps the miss path cheaper than a full map+RWMutex for read-mostly
+    workloads, but when the miss rate is high enough, each miss still serialises behind
+    amending the dirty map, and under goroutine growth this path becomes the latency floor.
+  falsifier: >
+    If the Bloom filter pre-check's p99 miss latency is not at least 20 % lower than a plain
+    sync.Map at any combination of (goroutines in {1, 2, 4, 8, 16, 32, 64}, miss rate in
+    {0.5, 0.7, 0.9, 0.95, 0.99}), the Bloom filter overhead is not paid back at the
+    concurrency levels reachable on a single machine.
+  complexity_justification: >
+    A Bloom filter adds per-insertion hashing, a fixed-size bit array, and periodic
+    false-positive rate management. It is warranted if it avoids enough sync.Map miss-path
+    traversals — each of which reads the read-only map, then may acquire the dirty-map mutex —
+    to produce a reduction in p99 latency that exceeds the filter's constant-factor overhead.
+
+baseline:
+  name: "Go sync.Map Load"
+  version: "Go 1.22"
+  url: "https://pkg.go.dev/sync#Map"
+  why: >
+    sync.Map is the Go standard library's concurrent map; it is what a Go programmer reaches
+    for when a map must be safe under concurrent Load calls without an explicit mutex. Adding
+    a Bloom filter in front of it is an optimisation — one that has a runtime cost and memory
+    cost — so the baseline must be the idiomatic, unoptimised path.
+
+hypotheses:
+  - id: H-001
+    statement: >
+      Under a read-heavy workload where ≥ 50 % of key accesses are to absent keys, a Bloom
+      filter pre-check on Go's sync.Map achieves at least 20 % lower p99 miss latency than a
+      plain sync.Map Load() at ≥ 16 goroutines, at the cost of a per-insertion Bloom insertion
+      and memory for the bit array.
+    verdict: untested
+    evidence_refs: []
+    revisions: []
+
+# Set once the remote exists (workflow 02 step 3). Required only at G6, so it stays
+# null until then rather than blocking every earlier gate as a placeholder.
+repo_url:
+created: "2026-08-10"
+updated: "2026-08-10"

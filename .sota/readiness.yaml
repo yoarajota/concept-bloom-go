@@ -1,0 +1,42 @@
+# TRL / IRL inputs. The `computed` block is written only by `sota.py srl --write`.
+# Rubrics: framework/instruments/{trl,irl,srl}.md
+
+components:
+  - id: core
+    role: concept          # concept | supporting | host | dataset | tooling
+    trl: 1
+    provisioning: none
+    evidence_refs: [E-001]
+    notes: >
+      The Bloom filter pre-check wrapper around sync.Map: an approximate membership test
+      (bit array + multi-hash) consulted before the Load() call to skip the internal miss
+      path when the Bloom filter says "definitely not present".
+      TRL 1 because the basic principle — Bloom filter as a contention-avoidance gate —
+      is stated in docs/01-theory.md with cited sources.
+
+data_dependencies: >
+  Go runtime CPU profiling data from `go tool pprof` validates contention hotspots.
+  The Bloom filter false-positive rate depends on the ratio of inserted keys to bit-array
+  size (k/n); both are configurable and explored in the benchmark parameter sweep.
+
+feedback_loops: >
+  If deployed as a miss-cache, the Bloom filter hit rate feeds back into its sizing:
+  too-small -> more false positives -> more sync.Map misses -> no win. The sizing is
+  configurable and the benchmark explores this dimension rather than closing the loop.
+
+drift_detection: >
+  False-positive rate drifts upward as inserted keys exceed the filter's design capacity.
+  Detected by periodically sampling the actual false-positive rate against the expected
+  rate (m * (1 - e^(-kn/m))^k). Not implemented at TRL 1; stated for R11 compliance.
+  # Populated at P4. Every entry needs a rationale naming what blocks the next IRL level,
+  # and a risk_ref when irl < 4.
+  # - from: core
+  #   to: store
+  #   irl: 6
+  #   rationale: >
+  #     Schema and error semantics defined; integration tests run against the real store;
+  #     no fault injection yet, which is what IRL 7 requires.
+  #   evidence_refs: [E-011, E-012]
+
+# Only for archetype `study`: gates that do not apply. Validation rejects this otherwise.
+not_applicable: []
