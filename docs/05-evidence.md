@@ -51,11 +51,12 @@ go test ./bench/... -run TestFPR -v
 ```
 
 **Result:** FPR observed 0.0101 vs expected 0.0100 for n=100,000, m=958,506, k=7
-(within 1% of the predicted value). Bloom filter miss-path avoidance verified by the
-benchmark framework running `BloomMap.Load()` vs `sync.Map.Load()`.
+(within 1% of the predicted value). The conformance test passes — the implementation's
+FPR stays within 2x of the analytical bound. ISO 5055 quality gates exit 0 (make quality:
+go vet, staticcheck, gitleaks, govulncheck). Architecture decisions documented in D-001.
 
 **Status:** reproducing
-**Supports:** H-001, TRL 3 for `core`
+**Supports:** H-001, S-001, TRL 4 for `core`
 **Recorded:** 2026-08-10
 
 ---

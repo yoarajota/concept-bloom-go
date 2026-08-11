@@ -1,15 +1,31 @@
 components:
 - id: core
   role: concept
-  trl: 3
+  trl: 4
   provisioning: none
   evidence_refs:
   - E-001
   - E-002
   notes: 'The Bloom filter pre-check wrapper around sync.Map: an approximate membership test (bit array
     + multi-hash) consulted before the Load() call to skip the internal miss path when the Bloom filter
-    says "definitely not present". TRL 1 because the basic principle — Bloom filter as a contention-avoidance
-    gate — is stated in docs/01-theory.md with cited sources.
+    says "definitely not present". TRL 4 because the component has an explicit public interface (BloomMap.Load/Store),
+    conformance tests pass (E-002 FPR ≤ 2x predicted), and ISO 5055 quality gates exit 0.
+
+    '
+- id: host
+  role: host
+  trl: 6
+  provisioning: host
+  provisioning_note: 'The Go 1.22 runtime and Linux amd64 OS are the execution environment. They cannot
+    be containerised in a separate image because the benchmark directly measures CPU-level latency (nanosecond
+    scale) — containerising the Go runtime introduces I/O and network virtualisation variance that defeats
+    the measurement.
+
+    '
+  evidence_refs:
+  - E-001
+  notes: 'Go 1.22.2 on Linux amd64, 13th Gen Intel i7-13650HX. The host is the execution environment for
+    the benchmark.
 
     '
 data_dependencies: 'Go runtime CPU profiling data from `go tool pprof` validates contention hotspots.
@@ -24,19 +40,31 @@ feedback_loops: 'If deployed as a miss-cache, the Bloom filter hit rate feeds ba
   '
 drift_detection: 'False-positive rate drifts upward as inserted keys exceed the filter''s design capacity.
   Detected by periodically sampling the actual false-positive rate against the expected rate (m * (1 -
-  e^(-kn/m))^k). Not implemented at TRL 1; stated for R11 compliance.
+  e^(-kn/m))^k). Not implemented at TRL 4; stated for R11 compliance.
 
   '
-integrations: []
+integrations:
+- from: core
+  to: host
+  irl: 3
+  risk_ref: R-002
+  rationale: 'The BloomMap compiles against Go 1.22 and the benchmark runs correctly on the host; error
+    semantics are implicit (sync.Map has no error returns). Timeouts, retries, and backpressure are not
+    defined — that is what IRL 4 requires.
+
+    '
+  evidence_refs:
+  - E-002
 not_applicable: []
 computed:
-  composite_srl: 0.3333
-  translated_srl: 4
-  strict_srl: null
+  composite_srl: 0.3703
+  translated_srl: 3
+  strict_srl: 0.1852
   component_srl:
     core: 0.3333
+    host: 0.4074
   weakest_component: core (0.3333)
-  weakest_integration: null
+  weakest_integration: core<->host (IRL 3)
   generated_at: '2026-08-10'
   generator: tools/sota.py srl
-  input_digest: f6167cceb21a43b7
+  input_digest: aeedddcb03799861
