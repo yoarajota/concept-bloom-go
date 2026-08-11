@@ -1,124 +1,132 @@
-# ISO/IEC 25010 utility tree + ISO/IEC 5055 gates + diffusion assessment.
-# Rubrics: framework/instruments/{iso25010,iso5055,diffusion}.md
-
-# At most 3. A concept that drives all nine drives none.
 driving_characteristics:
-  - performance-efficiency
-  - reliability
-
+- performance-efficiency
+- reliability
 utility_tree:
-  - id: S-001
-    characteristic: performance-efficiency
-    sub_attribute: time-behaviour
-    scenario: >
-      When 32 goroutines perform 1,000,000 Load() operations against a sync.Map with 50 %
-      absent keys and the Bloom filter pre-check enabled, the p99 miss latency is at least
-      20 % lower than when the pre-check is absent, measured as p99 miss-latency in
-      nanoseconds over 5 runs.
-    priority: high
-    difficulty: high
-    verification: bench/miss_latency_test.go
-    status: fail
-    evidence_refs: [E-003]
+- id: S-001
+  characteristic: performance-efficiency
+  sub_attribute: time-behaviour
+  scenario: 'When 32 goroutines perform 1,000,000 Load() operations against a sync.Map with 50 % absent
+    keys and the Bloom filter pre-check enabled, the p99 miss latency is at least 20 % lower than when
+    the pre-check is absent, measured as p99 miss-latency in nanoseconds over 5 runs.
 
-  - id: S-002
-    characteristic: reliability
-    sub_attribute: fault-tolerance
-    scenario: >
-      When the Bloom filter's false-positive rate climbs because inserted keys surpass the
-      capacity design point, the system continues to serve correct Load() results (the
-      Bloom filter is a pre-check, not a replacement), measured as zero incorrect
-      returns under a miss-heavy workload where 10 % of absent-key queries hit a false
-      positive.
-    priority: high
-    difficulty: medium
-    verification: bench/miss_latency_test.go
-    status: pass
-    evidence_refs: [E-002]
+    '
+  priority: high
+  difficulty: high
+  verification: bench/miss_latency_test.go
+  status: fail
+  evidence_refs:
+  - E-003
+- id: S-002
+  characteristic: reliability
+  sub_attribute: fault-tolerance
+  scenario: 'When the Bloom filter''s false-positive rate climbs because inserted keys surpass the capacity
+    design point, the system continues to serve correct Load() results (the Bloom filter is a pre-check,
+    not a replacement), measured as zero incorrect returns under a miss-heavy workload where 10 % of absent-key
+    queries hit a false positive.
 
-  - id: S-003
-    characteristic: maintainability
-    sub_attribute: modifiability
-    scenario: >
-      When the Bloom filter implementation is swapped for a different hashing strategy
-      (e.g. fnv to xxhash), a competent engineer applies it by touching at most 2 files
-      (the Bloom type and its constructor), measured as files changed in the reference patch.
-    priority: medium
-    difficulty: medium
-    verification: docs/04-tradeoffs.md
-    status: unverified
-    evidence_refs: []
+    '
+  priority: high
+  difficulty: medium
+  verification: bench/miss_latency_test.go
+  status: pass
+  evidence_refs:
+  - E-002
+- id: S-003
+  characteristic: maintainability
+  sub_attribute: modifiability
+  scenario: 'When the Bloom filter implementation is swapped for a different hashing strategy (e.g. fnv
+    to xxhash), a competent engineer applies it by touching at most 2 files (the Bloom type and its constructor),
+    measured as files changed in the reference patch.
 
+    '
+  priority: medium
+  difficulty: medium
+  verification: docs/04-tradeoffs.md
+  status: unverified
+  evidence_refs: []
 iso5055:
-  # One command that runs every check below and exits non-zero on violation.
-  runner: "make quality"
+  runner: make quality
   last_run:
-    date: "2026-08-10"
+    date: '2026-08-10'
     exit_code: 0
-    commit: "38519464063919f775c17f9499b4782fab8379a1"
+    commit: f81609c38ece96b5f8cd56c2900f4a1f9e460476
   thresholds:
     cyclomatic_complexity_max: 15
     function_length_max: 60
     file_length_max: 500
     duplicated_lines_pct_max: 3
     max_call_depth: 8
-  # Replace `tool` with the real check for this stack. Rows may not be dropped.
   weaknesses:
-    - {cwe: 798,  name: "Hard-coded credentials",              tool: "gitleaks detect"}
-    - {cwe: 20,   name: "Improper input validation",           tool: "staticcheck ./..."}
-    - {cwe: 476,  name: "Null pointer dereference",            tool: "go vet ./..."}
-    - {cwe: 772,  name: "Missing release of resource",         tool: "staticcheck ./..."}
-    - {cwe: 391,  name: "Unchecked error condition",           tool: "errcheck ./..."}
-    - {cwe: 400,  name: "Uncontrolled resource consumption",   tool: "staticcheck ./..."}
-    - {cwe: 1121, name: "Excessive cyclomatic complexity",     tool: "gocyclo -over 15 ."}
-    - {cwe: 1041, name: "Unstructured duplicated code",        tool: "golangci-lint run"}
-    - {cwe: 561,  name: "Dead code",                           tool: "deadcode ./..."}
-    - {cwe: 1047, name: "Circular dependencies",               tool: "go vet ./..."}
+  - cwe: 798
+    name: Hard-coded credentials
+    tool: gitleaks detect
+  - cwe: 20
+    name: Improper input validation
+    tool: staticcheck ./...
+  - cwe: 476
+    name: Null pointer dereference
+    tool: go vet ./...
+  - cwe: 772
+    name: Missing release of resource
+    tool: staticcheck ./...
+  - cwe: 391
+    name: Unchecked error condition
+    tool: errcheck ./...
+  - cwe: 400
+    name: Uncontrolled resource consumption
+    tool: staticcheck ./...
+  - cwe: 1121
+    name: Excessive cyclomatic complexity
+    tool: gocyclo -over 15 .
+  - cwe: 1041
+    name: Unstructured duplicated code
+    tool: golangci-lint run
+  - cwe: 561
+    name: Dead code
+    tool: deadcode ./...
+  - cwe: 1047
+    name: Circular dependencies
+    tool: go vet ./...
   exemptions: []
-  # - id: X-001
-  #   rule: cyclomatic_complexity_max
-  #   scope: internal/pkg/file.go:Function
-  #   reason: "At least 30 characters explaining why decomposition would make this worse."
-  #   expires: "2026-12-31"
-
-# Rule R5: every structural complexity traced to the scenario that requires it.
 complexity_ledger:
-  - item: "Bloom filter bit array + enhanced double hashing with maphash"
-    justifies: [S-001, S-002]
-    adr: D-001
-  - item: "BloomMap Load() pre-check (Bloom.MayContain before sync.Map.Load)"
-    justifies: [S-001]
-    adr: D-001
-  - item: "hash/maphash standard library package"
-    justifies: [S-001]
-    adr: D-001
-  # - item: "background compaction worker"
-  #   justifies: [S-001]
-  #   adr: D-003
-
+- item: Bloom filter bit array + enhanced double hashing with maphash
+  justifies:
+  - S-001
+  - S-002
+  adr: D-001
+- item: BloomMap Load() pre-check (Bloom.MayContain before sync.Map.Load)
+  justifies:
+  - S-001
+  adr: D-001
+- item: hash/maphash standard library package
+  justifies:
+  - S-001
+  adr: D-001
 diffusion:
   relative_advantage:
     score: weak
-    justification: "The Bloom filter pre-check is 6–25% slower than plain sync.Map at all
-      measured concurrency levels (E-003). There is no relative advantage to adopt it."
+    justification: The Bloom filter pre-check is 6–25% slower than plain sync.Map at all measured concurrency
+      levels (E-003). There is no relative advantage to adopt it.
   compatibility:
     score: weak
-    justification: "core<->host is IRL 3: no timeouts, retries, or backpressure. The
-      BloomMap API (Load/Store) is compatible with sync.Map's but the semantics differ
-      (false-negative-free, not byte-for-byte identical)."
+    justification: 'core<->host is IRL 3: no timeouts, retries, or backpressure. The BloomMap API (Load/Store)
+      is compatible with sync.Map''s but the semantics differ (false-negative-free, not byte-for-byte
+      identical).'
   simplicity:
     score: partial
-    justification: "The concept is narrow — one Bloom filter, one sync.Map wrapper. But
-      understanding when it helps (high miss rate + high concurrency + the right FPR)
-      requires domain knowledge about false-positive rates and sync.Map internals."
+    justification: The concept is narrow — one Bloom filter, one sync.Map wrapper. But understanding when
+      it helps (high miss rate + high concurrency + the right FPR) requires domain knowledge about false-positive
+      rates and sync.Map internals.
   trialability:
     score: strong
-    justification: "'go test ./bench/... -bench=.' reproduces the headline result from a
-      clean checkout in under 2 minutes (E-003). No external dependencies."
+    justification: '''go test ./bench/... -bench=.'' reproduces the headline result from a clean checkout
+      in under 2 minutes (E-003). No external dependencies.'
   observability:
     score: strong
-    justification: "Go benchmark output is direct and unfiltered; the performance penalty is
-      visible as higher ns/op in the benchmark output (E-003). The failure mode (Bloom filter
-      always found to be slower) is unambiguous."
+    justification: Go benchmark output is direct and unfiltered; the performance penalty is visible as
+      higher ns/op in the benchmark output (E-003). The failure mode (Bloom filter always found to be
+      slower) is unambiguous.
   suitable_for: none-yet
-  chasm_blockers: [relative_advantage, compatibility]
+  chasm_blockers:
+  - relative_advantage
+  - compatibility
