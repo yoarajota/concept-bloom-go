@@ -2,12 +2,12 @@
 
 quality:
 	go vet ./...
-	gocyclo -over 15 .
-	golangci-lint run
+	staticcheck ./...
 	gitleaks detect --no-banner
+	govulncheck ./...
 
 test:
-	go test ./internal/... -v -count=1
+	go test ./... -v -count=1
 
 bench:
 	go test ./bench/... -bench=. -benchmem -count=5

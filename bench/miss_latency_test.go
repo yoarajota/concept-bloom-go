@@ -6,7 +6,7 @@ import (
 	"sync/atomic"
 	"testing"
 
-	"github.com/yoarajota/concept-bloom-go/poc/bloom"
+	"github.com/yoarajota/concept-bloom-go/src"
 )
 
 func missLatency(b *testing.B, nGoroutines, nKeys, nMisses int, useBloom bool) {

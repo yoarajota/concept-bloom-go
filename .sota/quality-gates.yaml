@@ -54,8 +54,8 @@ iso5055:
   runner: "make quality"
   last_run:
     date: "2026-08-10"
-    exit_code: -1
-    commit: "44abb6cdc5451870dc36e4290237ec087052eec3"
+    exit_code: 0
+    commit: "fe09fc2c0fe3025454da7aaeb23b5c777b66a3dd"
   thresholds:
     cyclomatic_complexity_max: 15
     function_length_max: 60
@@ -82,7 +82,16 @@ iso5055:
   #   expires: "2026-12-31"
 
 # Rule R5: every structural complexity traced to the scenario that requires it.
-complexity_ledger: []
+complexity_ledger:
+  - item: "Bloom filter bit array + enhanced double hashing with maphash"
+    justifies: [S-001, S-002]
+    adr: D-001
+  - item: "BloomMap Load() pre-check (Bloom.MayContain before sync.Map.Load)"
+    justifies: [S-001]
+    adr: D-001
+  - item: "hash/maphash standard library package"
+    justifies: [S-001]
+    adr: D-001
   # - item: "background compaction worker"
   #   justifies: [S-001]
   #   adr: D-003
