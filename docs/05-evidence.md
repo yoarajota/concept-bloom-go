@@ -61,6 +61,47 @@ go vet, staticcheck, gitleaks, govulncheck). Architecture decisions documented i
 
 ---
 
+### E-003 — Benchmark: BloomMap vs plain sync.Map miss latency
+
+**Claim.** The Bloom filter pre-check does not reduce miss latency compared to plain sync.Map
+under read-heavy concurrent access across 1–32 goroutines with a background writer maintaining
+the dirty map. Hypothesis H-001 is falsified.
+
+**Environment:** Go 1.22.2, Linux amd64, 13th Gen Intel i7-13650HX, 100k pre-populated keys,
+1% Bloom filter false-positive rate (m=958,506, k=7), background writer inserting keys
+continuously.
+
+```bash
+go test ./bench/... -bench=. -benchmem -count=5 -benchtime=1s
+```
+
+**Result:** Mean ns/op across 5 runs:
+
+| Goroutines | Plain sync.Map | BloomMap | Bloom / Plain |
+| :--- | :-: | :-: | :-: |
+| 1 | 61.74 ns | 62.28 ns | +0.9% (slower) |
+| 4 | 23.39 ns | 27.59 ns | +18.0% (slower) |
+| 8 | 18.07 ns | 22.52 ns | +24.6% (slower) |
+| 16 | 17.01 ns | 18.11 ns | +6.5% (slower) |
+| 32 | 15.89 ns | 18.68 ns | +17.6% (slower) |
+
+The Bloom filter pre-check is consistently slower than plain sync.Map at every goroutine
+count tested. The hypothesis predicted ≥20% improvement at ≥16 goroutines; the observed
+result is a 6–25% penalty.
+
+**Analysis:** sync.Map's internal miss path (Go 1.22) is already highly optimised: atomic
+reads on the `read` map, and the mutex is only acquired when a dirty map exists. Even with a
+background writer creating a dirty map, the per-miss cost of double hashing (maphash) plus
+bit-array probing exceeds the atomic operations and infrequent mutex acquisition of the
+sync.Map miss path. The Bloom filter overhead is a constant factor that dominates the
+variable-contention savings at the concurrency levels reachable on a single machine.
+
+**Status:** reproducing
+**Supports:** H-001 (falsified), S-001 (fail), S-002 (pass)
+**Recorded:** 2026-08-10
+
+---
+
 <!-- Template for further entries:
 
 ### E-002 — title

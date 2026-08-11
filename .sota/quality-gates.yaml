@@ -18,8 +18,8 @@ utility_tree:
     priority: high
     difficulty: high
     verification: bench/miss_latency_test.go
-    status: unverified
-    evidence_refs: []
+    status: fail
+    evidence_refs: [E-003]
 
   - id: S-002
     characteristic: reliability
@@ -32,9 +32,9 @@ utility_tree:
       positive.
     priority: high
     difficulty: medium
-    verification: internal/bloom_map_test.go
-    status: unverified
-    evidence_refs: []
+    verification: bench/miss_latency_test.go
+    status: pass
+    evidence_refs: [E-002]
 
   - id: S-003
     characteristic: maintainability
@@ -55,7 +55,7 @@ iso5055:
   last_run:
     date: "2026-08-10"
     exit_code: 0
-    commit: "43deed5f9c9aab830e9ef1a81bb3883565aea6f9"
+    commit: "78c3347f01f6f61069fb98f48289d28bd87185f8"
   thresholds:
     cyclomatic_complexity_max: 15
     function_length_max: 60

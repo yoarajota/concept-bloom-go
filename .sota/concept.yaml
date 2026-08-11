@@ -3,8 +3,8 @@ slug: bloom-go
 title: "Bloom filter pre-check in Go sync.Map: crossover point for miss latency under read-heavy load"
 archetype: implementation
 data_driven: true
-phase: P4
-status: active
+phase: P5
+status: falsified
 
 # The framework is stack-agnostic — it only requires that the stack be declared, so gate
 # commands and verification paths are concrete rather than assumed. Any language is valid.
@@ -68,8 +68,8 @@ hypotheses:
       filter pre-check on Go's sync.Map achieves at least 20 % lower p99 miss latency than a
       plain sync.Map Load() at ≥ 16 goroutines, at the cost of a per-insertion Bloom insertion
       and memory for the bit array.
-    verdict: untested
-    evidence_refs: []
+    verdict: falsified
+    evidence_refs: [E-003]
     revisions: []
 
 # Set once the remote exists (workflow 02 step 3). Required only at G6, so it stays
