@@ -221,7 +221,7 @@ async function render() {
 render().catch(e => { $("#main").innerHTML = `<p class="mono noscript">Failed to load data.json — serve this directory over HTTP (python3 -m http.server). ${esc(e)}</p>`; });
 
 const body = document.body;
-const key = "sota-artifact-ink";
+const key = "artifact-ink";
 try { if (localStorage.getItem(key) === "1") body.classList.add("ink"); } catch (e) {}
 $("#toggle").addEventListener("click", () => {
   body.classList.toggle("ink");
