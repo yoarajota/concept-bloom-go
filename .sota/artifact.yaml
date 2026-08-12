@@ -1,0 +1,67 @@
+# Curated narrative for the concept artifact (docs/artifact/data.json).
+# Written at P6. H-001 is falsified — the artifact leads with that.
+
+pitch:
+  one_line_answer: "Falsified: the Bloom filter pre-check was slower than plain sync.Map at every concurrency level measured (1–32 goroutines) — Go's sync.Map miss path was already cheaper than the filter's overhead."
+  elevator: "The tempting idea: put a Bloom filter in front of Go's sync.Map so that misses never touch the map's internal machinery. The measured answer: sync.Map's miss path in Go 1.22 is mostly lock-free atomic reads, and the filter's double hashing plus bit-array probing costs more than the path it was supposed to avoid — the pre-check made every lookup slower, by 6–25%, at every goroutine count tried."
+
+headline:
+  - text: "BloomMap was slower than plain sync.Map at all measured concurrency levels: +0.9% at 1 goroutine to +24.6% at 8"
+    evidence: "E-003"
+  - text: "The falsification condition was met at every combination: the required 20% p99 improvement never appeared; the measured result was 6–25% slower"
+    evidence: "E-003"
+  - text: "Observed false-positive rate 0.0101 vs 0.0100 predicted (n=100k, m=958k, k=7) — the filter itself was built correctly; the premise was wrong, not the implementation"
+    evidence: "E-002"
+
+reproduce:
+  - "make bench"
+
+journey:
+  - phase: "P1 — Theory"
+    title: "The premise looked sound on paper"
+    summary: "Six sources established the standard story: sync.Map's miss path takes a mutex when promoting from the read map to the dirty map, so high miss rates should serialize under concurrency — exactly the case a Bloom filter pre-check avoids. The hypothesis set a falsifiable bar: 20% lower p99 miss latency at 16+ goroutines, against the idiomatic plain Load()."
+  - phase: "P2 — Proof of concept"
+    title: "The filter worked; the premise needed measuring"
+    summary: "The PoC confirmed the filter itself was correct — observed FPR 0.0101 against 0.0100 predicted (E-002) — which is what made the later falsification informative: the implementation was not the failure."
+  - phase: "P3 — Component"
+    title: "Hardened, so the measurement could not be blamed on the code"
+    summary: "BloomMap became a real component with conformance tests and a quality gate. The benchmark was written to hold the filter's costs (per-insertion hashing, bit array) fully inside the measured path."
+  - phase: "P5 — Evidence"
+    title: "The premise died cleanly"
+    summary: "E-003 measured mean ns/op across 1–32 goroutines: plain sync.Map won at every point, by 0.9% to 24.6%. Go 1.22's miss path for absent keys is mostly atomic reads and rarely takes the mutex — the contention the Bloom filter existed to avoid was never the cost driver. The falsification condition (≥20% improvement) was met in the negative at every combination. H-001: falsified."
+
+lessons:
+  - "The falsifier written before the work is what made the result publishable: 'no 20% win at any concurrency' turned a disappointing benchmark into a clean, complete answer."
+  - "Measuring the filter in isolation first (E-002) separated 'implementation wrong' from 'premise wrong' — the falsification is only informative because the filter was provably built correctly."
+  - "Standard-library data structures are optimised harder than the folklore assumes. The next time a lock-contention story is proposed for a stdlib structure, benchmark the plain path before designing the mitigation."
+
+dead_ends:
+  - title: "FNV-1a double hashing"
+    text: "Using hash/fnv with two salt bytes produced an observed false-positive rate 2.6x above the analytical prediction (ADR D-001). Switched to hash/maphash with two independent seeds, which closed the gap to 1x. The failure was instructive: the filter's real-world FPR depends on hash independence, not just k and m."
+  - title: "No background writer"
+    text: "An early benchmark without a concurrent writer showed BloomMap with higher per-op latency at every goroutine count — sync.Map's read-only miss path is lock-free, so the Bloom overhead is pure cost. Adding a background writer forces the dirty map and creates the contention the filter is supposed to avoid, but the overhead still dominates."
+
+limitations:
+  baseline_wins: "The baseline wins everywhere measured: plain sync.Map Load was 0.9–24.6% faster than BloomMap across 1–32 goroutines (E-003). The incumbent's miss path was already cheaper than the optimization proposed to improve it."
+  untested: "Single-machine measurement on a laptop. NUMA-scaled servers might change the picture, but the trend (Bloom overhead grows with goroutines) points the wrong way. Go 1.24 replaced sync.Map internals with a lock-free hash trie map; this concept targets Go ≤ 1.23."
+  next_level: "The concept is falsified and stops at TRL 4 — no further levels are claimable. A future revisit would need the Go 1.24 sync.Map internals as the new baseline before any Bloom claim could be made."
+  structural: "Finite filter sizes keep the false-positive rate within 2x of the analytical prediction, not exact. A Bloom pre-check always pays hashing cost per lookup, which is the entire reason the concept lost."
+
+audience:
+  who_is_this_for: "Go engineers who are considering a Bloom filter or similar pre-check in front of sync.Map — this repository is the measurement that saves them the build."
+  not_for: "Anyone who needs the answer to hold beyond Go ≤ 1.23, or who wants a reusable Bloom-over-sync.Map library — this repository publishes a negative result and a benchmark, not a component to adopt."
+
+chart:
+  title: "Mean ns/op: BloomMap vs plain sync.Map"
+  evidence: "E-003"
+  caption: "Mean ns/op across 5 runs · read-heavy, ≥50% misses · lower is better · the Bloom pre-check loses at every goroutine count"
+  x_ticks: [["1", 1], ["4", 4], ["8", 8], ["16", 16], ["32", 32]]
+  y_ticks: [0, 15, 30, 45, 60]
+  ymax: 65
+  series:
+    - name: "plain sync.Map Load (baseline)"
+      kind: baseline
+      points: [[1, 61.74], [4, 23.39], [8, 18.07], [16, 17.01], [32, 15.89]]
+    - name: "BloomMap pre-check"
+      kind: concept
+      points: [[1, 62.28], [4, 27.59], [8, 22.52], [16, 18.11], [32, 18.68]]

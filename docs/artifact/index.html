@@ -1,0 +1,232 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Concept artifact</title>
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<header class="topbar">
+  <div class="topbar-id">
+    <span class="topbar-concept mono" id="topbar-concept">CONCEPT C-001</span>
+    <span class="topbar-meta mono" id="topbar-meta">TRL 5 · SRL 4 · PHASE P6 · 2026-08-12</span>
+  </div>
+  <button id="toggle" class="toggle mono" aria-label="Toggle paper/ink mode" title="Dark mode">PAPER/INK</button>
+</header>
+<main id="main" aria-busy="true"></main>
+<footer class="letterhead mono" id="letterhead"></footer>
+<noscript><p class="mono noscript">This page requires JavaScript to load its content from data.json.</p></noscript>
+<script>
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const $ = sel => document.querySelector(sel);
+
+function chip(verdict, small) {
+  const known = ["supported", "partially-supported", "falsified", "untested"];
+  const cls = known.includes(verdict) ? verdict : "untested";
+  const label = verdict.replace(/-/g, " ");
+  return `<span class="chip ${esc(cls)}${small ? " chip-small" : ""}" role="img" aria-label="Verdict: ${label}">${esc(label)}</span>`;
+}
+
+function statusChip(status) {
+  return `<span class="chip chip-small status-${esc(status)}">${esc(status)}</span>`;
+}
+
+function diffChip(attribute, score) {
+  return `<span class="chip chip-small diff-${esc(score)}">${esc(attribute)} · ${esc(score)}</span>`;
+}
+
+function gauge(label, level, noteText) {
+  const pct = (level / 9) * 100;
+  return `<div class="gauge" role="img" aria-label="${esc(label)} ${level} of 9">
+    <div class="gauge-head">
+      <span class="gauge-name mono">${esc(label)}</span>
+      <span class="gauge-level">${level}<span class="gauge-max">/9</span></span>
+      <span class="gauge-note">${esc(noteText)}</span>
+    </div>
+    <div class="gauge-track"><div class="gauge-fill" style="width:${pct}%"></div></div>
+  </div>`;
+}
+
+function chart(d) {
+  const W = 720, H = 300, L = 52, R = 16, T = 16, B = 38;
+  const depths = d.series.flatMap(s => s.points.map(p => p[0])).concat((d.x_ticks || []).map(t => t[1]));
+  const positive = depths.filter(v => v > 0);
+  const x0 = Math.log10(Math.min(...positive)), x1 = Math.log10(Math.max(...positive));
+  const px = depth => {
+    const v = depth > 0 ? Math.log10(depth) : x0 - 0.45 * (x1 - x0);
+    return L + Math.max(0, Math.min(1, (v - x0) / (x1 - x0))) * (W - L - R);
+  };
+  const py = v => T + (1 - v / d.ymax) * (H - T - B);
+  const gridX = d.x_ticks.map(([label, depth]) =>
+    `<line class="chart-grid" x1="${px(depth)}" y1="${T}" x2="${px(depth)}" y2="${H - B}"/>`).join("");
+  const gridY = d.y_ticks.map(v =>
+    `<line class="chart-grid" x1="${L}" y1="${py(v)}" x2="${W - R}" y2="${py(v)}"/>`).join("");
+  const labelsX = d.x_ticks.map(([label, depth]) =>
+    `<text class="chart-axis" x="${px(depth)}" y="${H - B + 18}" text-anchor="middle">${label}</text>`).join("");
+  const labelsY = d.y_ticks.map(v =>
+    `<text class="chart-axis" x="${L - 8}" y="${py(v) + 4}" text-anchor="end">${v}</text>`).join("");
+  const paths = d.series.map(s => {
+    const pts = s.points.map(p => `${px(p[0])},${py(p[1])}`).join(" ");
+    const cls = s.kind === "concept" ? "chart-concept" : "chart-baseline";
+    const dots = s.kind === "concept" ? s.points.map(p =>
+      `<circle class="chart-concept-dot" cx="${px(p[0])}" cy="${py(p[1])}" r="3.2"/>`).join("") : "";
+    return `<polyline class="${cls}" points="${pts}" fill="none"/>${dots}`;
+  }).join("");
+  const co = d.crossover
+    ? `<line class="chart-crossover" x1="${px(d.crossover.depth)}" y1="${T}" x2="${px(d.crossover.depth)}" y2="${H - B}"/>
+    <text class="chart-crossover-label" x="${px(d.crossover.depth)}" y="${T + 12}" text-anchor="middle">${esc(d.crossover.label)}</text>`
+    : "";
+  const legend = d.series.map(s =>
+    `<span class="legend-item"><span class="legend-swatch ${s.kind === "concept" ? "legend-concept" : "legend-baseline"}"></span>${esc(s.name)}</span>`).join("");
+  return `<div class="chart">
+    <div class="chart-head">
+      <h3 class="chart-title">${esc(d.title)}</h3>
+      <span class="chart-ev mono">${esc(d.evidence)}</span>
+    </div>
+    <svg class="chart-svg" viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(d.title)}: OFFSET latency grows with depth, keyset stays flat">
+      ${gridX}${gridY}${labelsX}${labelsY}${co}${paths}
+    </svg>
+    <div class="chart-legend mono">${legend}</div>
+    <p class="chart-caption mono">${esc(d.caption)}</p>
+  </div>`;
+}
+
+function section(n, title) {
+  return `<section class="sect" id="s${n}">
+    <h2 class="sect-head"><span class="sect-num mono">§ ${n}</span><span class="sect-title">${esc(title)}</span></h2>`;
+}
+
+function evTable(rows) {
+  return `<table class="tbl mono"><thead><tr><th>ID</th><th>Title</th><th>Kind</th></tr></thead><tbody>
+    ${rows.map(e => `<tr><td><a class="link mono" href="docs/05-evidence.md">${esc(e.id)}</a></td><td>${esc(e.title)}</td><td>${e.has_command ? "command" : "survey"}</td></tr>`).join("")}
+  </tbody></table>`;
+}
+
+async function render() {
+  const res = await fetch("data.json");
+  const d = await res.json();
+  document.title = `${d.meta.concept_id} — ${d.meta.title}`;
+
+  $("#topbar-concept").textContent = `CONCEPT ${d.meta.concept_id}`;
+  $("#topbar-meta").textContent = `TRL ${d.readiness.trl} · SRL ${d.readiness.srl} · PHASE ${d.meta.phase} · ${d.meta.generated_at}`;
+
+  $("#main").innerHTML = `
+  <section class="hero">
+    <p class="kicker mono">${esc(d.meta.domain.map(x => x.toUpperCase()).join(" — "))} · ${esc(d.meta.archetype.toUpperCase())} · ${esc(d.meta.generated_at)}</p>
+    <h1 class="hero-title">${esc(d.meta.title)}</h1>
+    <p class="hero-question">${esc(d.meta.question)}</p>
+    <div class="hero-answer">
+      ${chip(d.meta.status)}
+      <p class="hero-answer-text">${esc(d.pitch.one_line_answer)}</p>
+    </div>
+  </section>
+
+  ${section(1, "The pitch")}
+    <p class="pitch dropcap">${esc(d.pitch.elevator)}</p>
+  </section>
+
+  ${section(2, "Headline results")}
+    <ul class="claims">
+      ${d.headline.map((h, i) => `<li class="claim">
+        <span class="claim-num mono">${String(i + 1).padStart(2, "0")}</span>
+        <p class="claim-text">${esc(h.text)}</p>
+        <span class="claim-ref mono">${esc(h.evidence)}</span>
+      </li>`).join("")}
+    </ul>
+    ${d.chart ? chart(d.chart) : ""}
+    <div class="reproduce">
+      <p class="reproduce-label mono">REPRODUCE — TWO COMMANDS</p>
+      <pre class="reproduce-code mono">${esc(d.reproduce.map(c => "$ " + c).join("\n"))}</pre>
+    </div>
+  </section>
+
+  ${section(3, "The claim, and what happened to it")}
+    ${d.verdict.hypotheses.map(h => `<article class="hyp-block">
+      <blockquote class="hyp"><p class="hyp-statement">${esc(h.id)} — ${esc(h.statement)}</p></blockquote>
+      <div class="verdict-line">
+        ${chip(h.verdict)}
+        <p class="verdict-refs mono">decided by ${esc((h.evidence_refs || []).join(" · "))}</p>
+      </div>
+    </article>`).join("")}
+  </section>
+
+  ${section(4, "Readiness")}
+    ${gauge("TRL", d.readiness.trl, d.readiness.trl_label)}
+    ${gauge("SRL", d.readiness.srl, d.readiness.srl_label)}
+    <table class="tbl mono"><thead><tr><th>Component</th><th>Role</th><th>TRL</th><th>SRL</th></tr></thead><tbody>
+      ${d.readiness.components.map(c => `<tr><td>${esc(c.id)}</td><td>${esc(c.role)}</td><td>${c.trl}</td><td>${c.srl.toFixed(3)}</td></tr>`).join("")}
+    </tbody></table>
+    <p class="weakest mono">WEAKEST SEAM — ${esc(d.readiness.weakest)}</p>
+    <table class="tbl mono"><thead><tr><th>Scenario</th><th>Characteristic</th><th>Status</th></tr></thead><tbody>
+      ${d.readiness.scenarios.map(s => `<tr><td>${esc(s.id)}</td><td>${esc(s.characteristic)}</td><td>${statusChip(s.status)}</td></tr>`).join("")}
+    </tbody></table>
+    <div class="diffusion">
+      <p class="diff-head mono">DIFFUSION — SUITABLE FOR ${esc(d.readiness.diffusion.suitable_for.toUpperCase())}</p>
+      <p class="diff-chips">${d.readiness.diffusion.scores.map(s => diffChip(s.attribute, s.score)).join(" ")}</p>
+      <p class="chasm">What blocks the next cohort: <strong>${esc(d.readiness.diffusion.chasm_blockers.join(", "))}</strong></p>
+    </div>
+  </section>
+
+  ${section(5, "How the work went")}
+    <div class="journey">
+      ${d.story.journey.map(j => `<article class="journey-step">
+        <h3 class="journey-phase mono">${esc(j.phase)}</h3>
+        <h4 class="journey-title">${esc(j.title)}</h4>
+        <p class="journey-summary">${esc(j.summary)}</p>
+      </article>`).join("")}
+    </div>
+    ${d.story.dead_ends && d.story.dead_ends.length ? `<div class="deadends">
+      <h3 class="deadends-label mono">WHAT WE TRIED THAT DIDN'T WORK</h3>
+      ${d.story.dead_ends.map(x => `<article class="deadend"><h4 class="deadend-title">${esc(x.title)}</h4><p class="deadend-text">${esc(x.text)}</p></article>`).join("")}
+    </div>` : ""}
+  </section>
+
+  ${section(6, "Lessons")}
+    <ol class="lessons">
+      ${d.lessons.map(l => `<li class="lesson"><span class="lesson-num mono"></span>${esc(l)}</li>`).join("")}
+    </ol>
+  </section>
+
+  ${section(7, "Limitations")}
+    <div class="lim">
+      <div class="lim-block"><h3 class="lim-label mono">WHERE THE BASELINE WINS</h3><p>${esc(d.limitations.baseline_wins)}</p></div>
+      <div class="lim-block"><h3 class="lim-label mono">WHAT IS UNTESTED</h3><p>${esc(d.limitations.untested)}</p></div>
+      <div class="lim-block"><h3 class="lim-label mono">WHAT WOULD MOVE IT UP</h3><p>${esc(d.limitations.next_level)}</p></div>
+      <div class="lim-block"><h3 class="lim-label mono">STRUCTURAL</h3><p>${esc(d.limitations.structural)}</p></div>
+    </div>
+  </section>
+
+  ${section(8, "Who this is for")}
+    <p><strong>${esc(d.audience.who_is_this_for)}</strong></p>
+    <p><strong>Not for:</strong> ${esc(d.audience.not_for)}</p>
+  </section>
+
+  ${section(9, "The evidence")}
+    ${evTable(d.evidence)}
+  </section>
+
+  ${section(10, "The repository")}
+    <table class="tbl mono"><thead><tr><th>Path</th><th>What</th></tr></thead><tbody>
+      ${d.repo.structure.map(r => `<tr><td>${esc(r.path)}</td><td>${esc(r.what)}</td></tr>`).join("")}
+    </tbody></table>
+    <p class="repolinks mono">${esc(d.repo.links.theory)} · ${esc(d.repo.links.tradeoffs)} · ${esc(d.repo.links.evidence)}</p>
+  </section>`;
+
+  $("#letterhead").innerHTML = `<span>${esc(d.meta.title)}</span><a class="link" href="${esc(d.meta.repo_url)}">${esc(d.meta.repo_url)}</a><span>Generated ${esc(d.meta.generated_at)} · ${esc(d.meta.concept_id)} · ${esc(d.meta.status)}</span>`;
+  $("#main").setAttribute("aria-busy", "false");
+}
+
+render().catch(e => { $("#main").innerHTML = `<p class="mono noscript">Failed to load data.json — serve this directory over HTTP (python3 -m http.server). ${esc(e)}</p>`; });
+
+const body = document.body;
+const key = "sota-artifact-ink";
+try { if (localStorage.getItem(key) === "1") body.classList.add("ink"); } catch (e) {}
+$("#toggle").addEventListener("click", () => {
+  body.classList.toggle("ink");
+  try { localStorage.setItem(key, body.classList.contains("ink") ? "1" : "0"); } catch (e) {}
+});
+</script>
+</body>
+</html>
