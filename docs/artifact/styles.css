@@ -92,11 +92,11 @@ body.ink {
   --accent-soft: #dfe6f3;
   --ok: #2f6e4e;
   --ok-soft: #dce9e2;
-  --warn: #a16207;
+  --warn: #7a4d06;
   --warn-soft: #f4e8d0;
   --bad: #a63a3a;
   --bad-soft: #f4dcdc;
-  --idle: #7e8295;
+  --idle: #5f6676;
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -194,6 +194,7 @@ main { max-width: 46rem; margin: 0 auto; padding: 0 clamp(1rem, 4vw, 3rem); }
 .chip.partially-supported { background: var(--warn-soft); color: var(--warn); border: 1px solid var(--warn); }
 .chip.falsified { background: var(--bad); color: var(--paper); }
 .chip.untested { border: 1px dashed var(--idle); color: var(--idle); }
+.chip.state { background: var(--panel); color: var(--idle); border: 1px solid var(--idle); }
 
 .chip-small { font-size: 0.64rem; padding: 0.4em 0.8em; }
 .status-pass { background: var(--ok-soft); color: var(--ok); }
@@ -275,6 +276,7 @@ main { max-width: 46rem; margin: 0 auto; padding: 0 clamp(1rem, 4vw, 3rem); }
 .hyp-block { margin-bottom: 1.6rem; }
 .hyp { padding-left: 1.4rem; border-left: 3px solid var(--accent); margin-bottom: 1rem; max-width: 38em; }
 .hyp-statement { font-family: var(--serif); font-style: italic; font-size: 1.08rem; }
+.hyp-id { font-style: normal; font-size: 0.72rem; letter-spacing: 0.12em; color: var(--accent); font-weight: 600; }
 .verdict-line { display: flex; align-items: center; gap: 1.2rem; flex-wrap: wrap; }
 .verdict-refs { font-size: 0.72rem; letter-spacing: 0.1em; color: var(--muted); }
 

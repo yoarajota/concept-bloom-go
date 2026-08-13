@@ -16,7 +16,7 @@
     "created": "2026-08-10",
     "updated": "2026-08-10",
     "generated_at": "2026-08-12",
-    "input_digest": "98709f8a8c587453"
+    "input_digest": "de19bcb8bc64b975"
   },
   "pitch": {
     "one_line_answer": "Falsified: the Bloom filter pre-check was slower than plain sync.Map at every concurrency level measured (1–32 goroutines) — Go's sync.Map miss path was already cheaper than the filter's overhead.",
@@ -229,12 +229,11 @@
       }
     ],
     "links": {
-      "theory": "docs/01-theory.md",
-      "tradeoffs": "docs/04-tradeoffs.md",
-      "evidence": "docs/05-evidence.md",
+      "theory": "../01-theory.md",
+      "tradeoffs": "../04-tradeoffs.md",
+      "evidence": "../05-evidence.md",
       "adrs": [
-        "docs/adr/D-000-template.md",
-        "docs/adr/D-001-bloom-filter-design.md"
+        "../adr/D-001-bloom-filter-design.md"
       ]
     }
   },

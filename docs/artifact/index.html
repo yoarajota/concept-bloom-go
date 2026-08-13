@@ -11,30 +11,31 @@
 <button id="toggle" class="toggle mono" aria-label="Toggle dark and light mode" title="Toggle dark/light">PAPER/INK</button>
 <main id="main" aria-busy="true"></main>
 <footer class="colophon mono" id="colophon"></footer>
-<noscript><p class="mono noscript">This page requires JavaScript to load its content.</p></noscript>
-<script id="artifact-data" type="application/json">{"meta": {"concept_id": "C-002", "slug": "bloom-go", "title": "Bloom filter pre-check in Go sync.Map: crossover point for miss latency under read-heavy load", "question": "What is the crossover point where a Bloom filter pre-check in Go's sync.Map reduces miss latency under read-heavy concurrent access?", "status": "falsified", "phase": "P6", "archetype": "implementation", "domain": ["concurrency", "data-structures", "go"], "repo_url": "https://github.com/yoarajota/concept-bloom-go", "created": "2026-08-10", "updated": "2026-08-10", "generated_at": "2026-08-12", "input_digest": "98709f8a8c587453"}, "pitch": {"one_line_answer": "Falsified: the Bloom filter pre-check was slower than plain sync.Map at every concurrency level measured (1–32 goroutines) — Go's sync.Map miss path was already cheaper than the filter's overhead.", "elevator": "The tempting idea: put a Bloom filter in front of Go's sync.Map so that misses never touch the map's internal machinery. The measured answer: sync.Map's miss path in Go 1.22 is mostly lock-free atomic reads, and the filter's double hashing plus bit-array probing costs more than the path it was supposed to avoid — the pre-check made every lookup slower, by 6–25%, at every goroutine count tried."}, "verdict": {"hypotheses": [{"id": "H-001", "statement": "Under a read-heavy workload where ≥ 50 % of key accesses are to absent keys, a Bloom filter pre-check on Go's sync.Map achieves at least 20 % lower p99 miss latency than a plain sync.Map Load() at ≥ 16 goroutines, at the cost of a per-insertion Bloom insertion and memory for the bit array.\n", "verdict": "falsified", "evidence_refs": ["E-003"]}]}, "headline": [{"text": "The Bloom pre-check was slower than plain sync.Map at every measured concurrency level: from +0.9% at 1 goroutine to +24.6% at 8", "evidence": "E-003"}, {"text": "The required 20% improvement never appeared — the measured result was 6–25% slower, which is the falsification condition met in the negative", "evidence": "E-003"}, {"text": "The filter itself was built correctly: observed false-positive rate 0.0101 against 0.0100 predicted — the premise was wrong, not the implementation", "evidence": "E-002"}], "evidence": [{"id": "E-001", "title": "Literature survey", "has_command": true}, {"id": "E-002", "title": "PoC: Bloom filter false-positive rate conformance", "has_command": true}, {"id": "E-003", "title": "Benchmark: BloomMap vs plain sync.Map miss latency", "has_command": true}], "readiness": {"trl": 4, "trl_label": "Component validated in lab", "srl": 3, "srl_label": "High-risk immature technologies identified and prototyped", "composite_srl": 0.3703, "components": [{"id": "core", "role": "concept", "trl": 4, "srl": 0.3333}, {"id": "host", "role": "host", "trl": 6, "srl": 0.4074}], "integrations": [{"from": "core", "to": "host", "irl": 3, "note": "The BloomMap compiles against Go 1.22 and the benchmark runs correctly on the host; error semantics are implicit (sync.Map has no error returns). Timeouts, retries, and backpressure are not defined — that is what IRL 4 requires.\n"}], "weakest": "core<->host (IRL 3)", "scenarios": [{"id": "S-001", "characteristic": "performance-efficiency", "priority": "high", "status": "fail"}, {"id": "S-002", "characteristic": "reliability", "priority": "high", "status": "pass"}, {"id": "S-003", "characteristic": "maintainability", "priority": "medium", "status": "unverified"}], "diffusion": {"scores": [{"attribute": "relative_advantage", "score": "weak"}, {"attribute": "compatibility", "score": "weak"}, {"attribute": "simplicity", "score": "partial"}, {"attribute": "trialability", "score": "strong"}, {"attribute": "observability", "score": "strong"}], "suitable_for": "none-yet", "chasm_blockers": ["relative_advantage", "compatibility"]}}, "story": {"journey": [{"phase": "Theory", "title": "The premise looked sound on paper", "summary": "Six sources established the standard story: sync.Map's miss path takes a lock when promoting entries between its internal read and dirty maps, so heavy miss rates should serialize under concurrency — exactly the case a Bloom filter pre-check avoids. The hypothesis set a falsifiable bar: 20% lower p99 miss latency at 16+ goroutines, against the idiomatic plain Load()."}, {"phase": "Proof of concept", "title": "The filter worked; the premise needed measuring", "summary": "The proof of concept confirmed the filter itself was correct — observed false-positive rate 0.0101 against 0.0100 predicted (E-002) — which is what made the later falsification informative: the implementation was not the failure."}, {"phase": "Component", "title": "Hardened, so the measurement could not be blamed on the code", "summary": "The pre-check became a real component with conformance tests and a quality gate. The benchmark was written to hold the filter's costs — per-insertion hashing, the bit array — fully inside the measured path."}, {"phase": "Evidence", "title": "The premise died cleanly", "summary": "The benchmark measured mean nanoseconds per operation across 1–32 goroutines: plain sync.Map won at every point, by 0.9% to 24.6%. Go 1.22's miss path for absent keys is mostly atomic reads and rarely takes the lock — the contention the Bloom filter existed to avoid was never the cost driver. The claim was falsified, in the negative, at every combination measured."}], "dead_ends": [{"title": "FNV-1a double hashing", "text": "Using hash/fnv with two salt bytes produced an observed false-positive rate 2.6x above the analytical prediction. Switching to hash/maphash with two independent seeds closed the gap to 1x. The failure was instructive: the filter's real-world false-positive rate depends on hash independence, not just the number of hash functions and the bit-array size."}, {"title": "No background writer", "text": "An early benchmark without a concurrent writer showed the pre-check with higher per-op latency at every goroutine count — sync.Map's read-only miss path is lock-free, so the Bloom overhead is pure cost. Adding a background writer forces the dirty map and creates the contention the filter is supposed to avoid, but the overhead still dominates."}]}, "lessons": ["The falsifier written before the work is what made the result publishable: 'no 20% win at any concurrency' turned a disappointing benchmark into a clean, complete answer.", "Measuring the filter in isolation first separated 'implementation wrong' from 'premise wrong' — the falsification is only informative because the filter was provably built correctly.", "Standard-library data structures are optimised harder than the folklore assumes. The next time a lock-contention story is proposed for a stdlib structure, benchmark the plain path before designing the mitigation."], "limitations": {"baseline_wins": "The baseline wins everywhere measured: plain sync.Map Load was 0.9–24.6% faster than the pre-check across 1–32 goroutines (E-003). The incumbent's miss path was already cheaper than the optimisation proposed to improve it.", "untested": "Single-machine measurement on a laptop. NUMA-scaled servers might change the picture, but the trend — the overhead grows with goroutines — points the wrong way. Go 1.24 replaced sync.Map internals with a lock-free hash trie map; this work targets Go ≤ 1.23.", "next_level": "The concept is falsified and stops at readiness level 4 (validated in a lab environment) — no further levels are claimable. A future revisit would need the Go 1.24 sync.Map internals as the new baseline before any Bloom claim could be made.", "structural": "Finite filter sizes keep the false-positive rate within 2x of the analytical prediction, not exact. A Bloom pre-check always pays hashing cost per lookup — which is the entire reason the concept lost."}, "audience": {"who_is_this_for": "Go engineers who are considering a Bloom filter or similar pre-check in front of sync.Map — this is the measurement that saves them the build.", "not_for": "Anyone who needs the answer to hold beyond Go ≤ 1.23, or who wants a reusable Bloom-over-sync.Map library — this publishes a negative result and a benchmark, not a component to adopt."}, "repo": {"structure": [{"path": "src/", "what": "The implementation — public interface documented in the README"}, {"path": "bench/", "what": "The benchmark scripts that produced the headline evidence"}, {"path": "docs/01-theory.md", "what": "What the literature establishes, with the SRC-### source ledger"}, {"path": "docs/03-log.md", "what": "Append-only working log, including what was tried and failed"}, {"path": "docs/04-tradeoffs.md", "what": "Scenarios, sensitivity points, tradeoff points, and risks"}, {"path": "docs/05-evidence.md", "what": "Every claim with its command, environment, and observed result"}, {"path": "docs/adr/", "what": "Decisions and the options rejected"}, {"path": ".sota/", "what": "Machine-readable readiness and quality data"}], "links": {"theory": "docs/01-theory.md", "tradeoffs": "docs/04-tradeoffs.md", "evidence": "docs/05-evidence.md", "adrs": ["docs/adr/D-000-template.md", "docs/adr/D-001-bloom-filter-design.md"]}}, "reproduce": ["make bench"], "chart": {"title": "Mean ns/op: BloomMap vs plain sync.Map", "evidence": "E-003", "caption": "Mean ns/op across 5 runs · read-heavy, ≥50% misses · lower is better · the Bloom pre-check loses at every goroutine count", "x_ticks": [["1", 1], ["4", 4], ["8", 8], ["16", 16], ["32", 32]], "y_ticks": [0, 15, 30, 45, 60], "ymax": 65, "series": [{"name": "plain sync.Map Load (baseline)", "kind": "baseline", "points": [[1, 61.74], [4, 23.39], [8, 18.07], [16, 17.01], [32, 15.89]]}, {"name": "BloomMap pre-check", "kind": "concept", "points": [[1, 62.28], [4, 27.59], [8, 22.52], [16, 18.11], [32, 18.68]]}]}}</script>
+<noscript><p class="mono noscript">This page renders its content with JavaScript. The raw content is available in <a class="link" href="data.json">data.json</a>.</p></noscript>
+<script id="artifact-data" type="application/json">{"meta": {"concept_id": "C-002", "slug": "bloom-go", "title": "Bloom filter pre-check in Go sync.Map: crossover point for miss latency under read-heavy load", "question": "What is the crossover point where a Bloom filter pre-check in Go's sync.Map reduces miss latency under read-heavy concurrent access?", "status": "falsified", "phase": "P6", "archetype": "implementation", "domain": ["concurrency", "data-structures", "go"], "repo_url": "https://github.com/yoarajota/concept-bloom-go", "created": "2026-08-10", "updated": "2026-08-10", "generated_at": "2026-08-12", "input_digest": "de19bcb8bc64b975"}, "pitch": {"one_line_answer": "Falsified: the Bloom filter pre-check was slower than plain sync.Map at every concurrency level measured (1–32 goroutines) — Go's sync.Map miss path was already cheaper than the filter's overhead.", "elevator": "The tempting idea: put a Bloom filter in front of Go's sync.Map so that misses never touch the map's internal machinery. The measured answer: sync.Map's miss path in Go 1.22 is mostly lock-free atomic reads, and the filter's double hashing plus bit-array probing costs more than the path it was supposed to avoid — the pre-check made every lookup slower, by 6–25%, at every goroutine count tried."}, "verdict": {"hypotheses": [{"id": "H-001", "statement": "Under a read-heavy workload where ≥ 50 % of key accesses are to absent keys, a Bloom filter pre-check on Go's sync.Map achieves at least 20 % lower p99 miss latency than a plain sync.Map Load() at ≥ 16 goroutines, at the cost of a per-insertion Bloom insertion and memory for the bit array.\n", "verdict": "falsified", "evidence_refs": ["E-003"]}]}, "headline": [{"text": "The Bloom pre-check was slower than plain sync.Map at every measured concurrency level: from +0.9% at 1 goroutine to +24.6% at 8", "evidence": "E-003"}, {"text": "The required 20% improvement never appeared — the measured result was 6–25% slower, which is the falsification condition met in the negative", "evidence": "E-003"}, {"text": "The filter itself was built correctly: observed false-positive rate 0.0101 against 0.0100 predicted — the premise was wrong, not the implementation", "evidence": "E-002"}], "evidence": [{"id": "E-001", "title": "Literature survey", "has_command": true}, {"id": "E-002", "title": "PoC: Bloom filter false-positive rate conformance", "has_command": true}, {"id": "E-003", "title": "Benchmark: BloomMap vs plain sync.Map miss latency", "has_command": true}], "readiness": {"trl": 4, "trl_label": "Component validated in lab", "srl": 3, "srl_label": "High-risk immature technologies identified and prototyped", "composite_srl": 0.3703, "components": [{"id": "core", "role": "concept", "trl": 4, "srl": 0.3333}, {"id": "host", "role": "host", "trl": 6, "srl": 0.4074}], "integrations": [{"from": "core", "to": "host", "irl": 3, "note": "The BloomMap compiles against Go 1.22 and the benchmark runs correctly on the host; error semantics are implicit (sync.Map has no error returns). Timeouts, retries, and backpressure are not defined — that is what IRL 4 requires.\n"}], "weakest": "core\u003c->host (IRL 3)", "scenarios": [{"id": "S-001", "characteristic": "performance-efficiency", "priority": "high", "status": "fail"}, {"id": "S-002", "characteristic": "reliability", "priority": "high", "status": "pass"}, {"id": "S-003", "characteristic": "maintainability", "priority": "medium", "status": "unverified"}], "diffusion": {"scores": [{"attribute": "relative_advantage", "score": "weak"}, {"attribute": "compatibility", "score": "weak"}, {"attribute": "simplicity", "score": "partial"}, {"attribute": "trialability", "score": "strong"}, {"attribute": "observability", "score": "strong"}], "suitable_for": "none-yet", "chasm_blockers": ["relative_advantage", "compatibility"]}}, "story": {"journey": [{"phase": "Theory", "title": "The premise looked sound on paper", "summary": "Six sources established the standard story: sync.Map's miss path takes a lock when promoting entries between its internal read and dirty maps, so heavy miss rates should serialize under concurrency — exactly the case a Bloom filter pre-check avoids. The hypothesis set a falsifiable bar: 20% lower p99 miss latency at 16+ goroutines, against the idiomatic plain Load()."}, {"phase": "Proof of concept", "title": "The filter worked; the premise needed measuring", "summary": "The proof of concept confirmed the filter itself was correct — observed false-positive rate 0.0101 against 0.0100 predicted (E-002) — which is what made the later falsification informative: the implementation was not the failure."}, {"phase": "Component", "title": "Hardened, so the measurement could not be blamed on the code", "summary": "The pre-check became a real component with conformance tests and a quality gate. The benchmark was written to hold the filter's costs — per-insertion hashing, the bit array — fully inside the measured path."}, {"phase": "Evidence", "title": "The premise died cleanly", "summary": "The benchmark measured mean nanoseconds per operation across 1–32 goroutines: plain sync.Map won at every point, by 0.9% to 24.6%. Go 1.22's miss path for absent keys is mostly atomic reads and rarely takes the lock — the contention the Bloom filter existed to avoid was never the cost driver. The claim was falsified, in the negative, at every combination measured."}], "dead_ends": [{"title": "FNV-1a double hashing", "text": "Using hash/fnv with two salt bytes produced an observed false-positive rate 2.6x above the analytical prediction. Switching to hash/maphash with two independent seeds closed the gap to 1x. The failure was instructive: the filter's real-world false-positive rate depends on hash independence, not just the number of hash functions and the bit-array size."}, {"title": "No background writer", "text": "An early benchmark without a concurrent writer showed the pre-check with higher per-op latency at every goroutine count — sync.Map's read-only miss path is lock-free, so the Bloom overhead is pure cost. Adding a background writer forces the dirty map and creates the contention the filter is supposed to avoid, but the overhead still dominates."}]}, "lessons": ["The falsifier written before the work is what made the result publishable: 'no 20% win at any concurrency' turned a disappointing benchmark into a clean, complete answer.", "Measuring the filter in isolation first separated 'implementation wrong' from 'premise wrong' — the falsification is only informative because the filter was provably built correctly.", "Standard-library data structures are optimised harder than the folklore assumes. The next time a lock-contention story is proposed for a stdlib structure, benchmark the plain path before designing the mitigation."], "limitations": {"baseline_wins": "The baseline wins everywhere measured: plain sync.Map Load was 0.9–24.6% faster than the pre-check across 1–32 goroutines (E-003). The incumbent's miss path was already cheaper than the optimisation proposed to improve it.", "untested": "Single-machine measurement on a laptop. NUMA-scaled servers might change the picture, but the trend — the overhead grows with goroutines — points the wrong way. Go 1.24 replaced sync.Map internals with a lock-free hash trie map; this work targets Go ≤ 1.23.", "next_level": "The concept is falsified and stops at readiness level 4 (validated in a lab environment) — no further levels are claimable. A future revisit would need the Go 1.24 sync.Map internals as the new baseline before any Bloom claim could be made.", "structural": "Finite filter sizes keep the false-positive rate within 2x of the analytical prediction, not exact. A Bloom pre-check always pays hashing cost per lookup — which is the entire reason the concept lost."}, "audience": {"who_is_this_for": "Go engineers who are considering a Bloom filter or similar pre-check in front of sync.Map — this is the measurement that saves them the build.", "not_for": "Anyone who needs the answer to hold beyond Go ≤ 1.23, or who wants a reusable Bloom-over-sync.Map library — this publishes a negative result and a benchmark, not a component to adopt."}, "repo": {"structure": [{"path": "src/", "what": "The implementation — public interface documented in the README"}, {"path": "bench/", "what": "The benchmark scripts that produced the headline evidence"}, {"path": "docs/01-theory.md", "what": "What the literature establishes, with the SRC-### source ledger"}, {"path": "docs/03-log.md", "what": "Append-only working log, including what was tried and failed"}, {"path": "docs/04-tradeoffs.md", "what": "Scenarios, sensitivity points, tradeoff points, and risks"}, {"path": "docs/05-evidence.md", "what": "Every claim with its command, environment, and observed result"}, {"path": "docs/adr/", "what": "Decisions and the options rejected"}, {"path": ".sota/", "what": "Machine-readable readiness and quality data"}], "links": {"theory": "../01-theory.md", "tradeoffs": "../04-tradeoffs.md", "evidence": "../05-evidence.md", "adrs": ["../adr/D-001-bloom-filter-design.md"]}}, "reproduce": ["make bench"], "chart": {"title": "Mean ns/op: BloomMap vs plain sync.Map", "evidence": "E-003", "caption": "Mean ns/op across 5 runs · read-heavy, ≥50% misses · lower is better · the Bloom pre-check loses at every goroutine count", "x_ticks": [["1", 1], ["4", 4], ["8", 8], ["16", 16], ["32", 32]], "y_ticks": [0, 15, 30, 45, 60], "ymax": 65, "series": [{"name": "plain sync.Map Load (baseline)", "kind": "baseline", "points": [[1, 61.74], [4, 23.39], [8, 18.07], [16, 17.01], [32, 15.89]]}, {"name": "BloomMap pre-check", "kind": "concept", "points": [[1, 62.28], [4, 27.59], [8, 22.52], [16, 18.11], [32, 18.68]]}]}}</script>
 <script>
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const $ = sel => document.querySelector(sel);
 
 function chip(verdict, small) {
   const known = ["supported", "partially-supported", "falsified", "untested"];
-  const cls = known.includes(verdict) ? verdict : "untested";
+  const cls = known.includes(verdict) ? verdict : "state";
   const label = verdict.replace(/-/g, " ");
-  return `<span class="chip ${esc(cls)}${small ? " chip-small" : ""}" role="img" aria-label="Verdict: ${label}">${esc(label)}</span>`;
+  return `<span class="chip ${esc(cls)}${small ? " chip-small" : ""}" aria-label="Status: ${label}">${esc(label)}</span>`;
 }
 
 function statusChip(status) {
   return `<span class="chip chip-small status-${esc(status)}">${esc(status)}</span>`;
 }
 
+const DIFF_NAMES = { "relative_advantage": "clear advantage over what people use today",
+                     "compatibility": "fits existing setups",
+                     "simplicity": "easy to understand and adopt",
+                     "trialability": "easy to try out",
+                     "observability": "you can see it working" };
+
 function diffChip(attribute, score) {
-  const names = { "relative_advantage": "clear advantage over what people use today",
-                  "compatibility": "fits existing setups",
-                  "simplicity": "easy to understand and adopt",
-                  "trialability": "easy to try out",
-                  "observability": "you can see it working" };
-  return `<span class="chip chip-small diff-${esc(score)}">${esc(names[attribute] || attribute)} · ${esc(score)}</span>`;
+  return `<span class="chip chip-small diff-${esc(score)}">${esc(DIFF_NAMES[attribute] || attribute)} · ${esc(score)}</span>`;
 }
 
 function gauge(label, level, noteText) {
@@ -58,13 +59,14 @@ function chart(d) {
     const v = depth > 0 ? Math.log10(depth) : x0 - 0.45 * (x1 - x0);
     return L + Math.max(0, Math.min(1, (v - x0) / (x1 - x0))) * (W - L - R);
   };
-  const py = v => T + (1 - v / d.ymax) * (H - T - B);
+  if (!positive.length) { return ""; }
+  const py = v => T + Math.max(0, Math.min(1, 1 - v / d.ymax)) * (H - T - B);
   const gridX = d.x_ticks.map(([label, depth]) =>
     `<line class="chart-grid" x1="${px(depth)}" y1="${T}" x2="${px(depth)}" y2="${H - B}"/>`).join("");
   const gridY = d.y_ticks.map(v =>
     `<line class="chart-grid" x1="${L}" y1="${py(v)}" x2="${W - R}" y2="${py(v)}"/>`).join("");
   const labelsX = d.x_ticks.map(([label, depth]) =>
-    `<text class="chart-axis" x="${px(depth)}" y="${H - B + 18}" text-anchor="middle">${label}</text>`).join("");
+    `<text class="chart-axis" x="${px(depth)}" y="${H - B + 18}" text-anchor="middle">${esc(label)}</text>`).join("");
   const labelsY = d.y_ticks.map(v =>
     `<text class="chart-axis" x="${L - 8}" y="${py(v) + 4}" text-anchor="end">${v}</text>`).join("");
   const paths = d.series.map(s => {
@@ -91,6 +93,10 @@ function chart(d) {
 
 const LEGEND = [
   ["verdict chip", "the bottom line of this project — green means the claim held, red means it was disproved, amber means partly, dashed means not decided"],
+  ["paused / archived chip", "the work was deliberately stopped at this point — the verdict below is the last state it reached"],
+  ["scenario chips (pass / fail / unverified)", "a concrete situation the concept was required to handle, and whether it was demonstrated, failed, or never measured"],
+  ["diffusion chips (strong / partial / weak)", "how ready each adoption-relevant trait is today, in the author's assessment"],
+  ["weakest link", "the least proven part of the system as a whole — what most limits using it for real"],
   ["E-001 … E-999", "a measured result, linked to the evidence document — every claim on this page points at one"],
   ["H-001 … H-999", "a hypothesis: the specific prediction this project set out to test, stated before measuring"],
   ["S-001 … S-999", "a scenario: one concrete situation the concept was required to handle, with a pass or fail verdict"],
@@ -115,9 +121,9 @@ function section(title, body) {
   return `<section class="sect"><h2 class="sect-title">${esc(title)}</h2>${body}</section>`;
 }
 
-function evTable(rows) {
+function evTable(rows, evidenceHref) {
   return `<table class="tbl mono"><thead><tr><th>Evidence</th><th>What it measured</th></tr></thead><tbody>
-    ${rows.map(e => `<tr><td><a class="link mono" href="docs/05-evidence.md">${esc(e.id)}</a></td><td>${esc(e.title)}</td></tr>`).join("")}
+    ${rows.map(e => `<tr><td><a class="link mono" href="${esc(evidenceHref)}">${esc(e.id)}</a></td><td>${esc(e.title)}</td></tr>`).join("")}
   </tbody></table>`;
 }
 
@@ -136,12 +142,18 @@ function digDeeper(links) {
 }
 
 function render() {
-  const raw = document.getElementById("artifact-data").textContent;
-  if (!raw || !raw.trim() || raw.includes("__ARTIFACT_DATA__")) {
+  const raw = document.getElementById("artifact-data").textContent.trim();
+  if (!raw || raw === "__ARTIFACT_DATA__") {
     $("#main").innerHTML = '<p class="mono noscript">No embedded content — regenerate the artifact page.</p>';
     return;
   }
-  const d = JSON.parse(raw);
+  let d;
+  try {
+    d = JSON.parse(raw);
+  } catch (e) {
+    $("#main").innerHTML = '<p class="mono noscript">The embedded content is damaged — regenerate the artifact page.</p>';
+    return;
+  }
   document.title = d.meta.title;
 
   $("#main").innerHTML = `
@@ -169,13 +181,13 @@ function render() {
     </ul>
     ${d.chart ? chart(d.chart) : ""}
     ${d.reproduce && d.reproduce.length ? `<div class="reproduce">
-      <p class="reproduce-label mono">REPRODUCE IT YOURSELF — TWO COMMANDS</p>
+      <p class="reproduce-label mono">REPRODUCE IT YOURSELF</p>
       <pre class="reproduce-code mono">${esc(d.reproduce.map(c => "$ " + c).join("\n"))}</pre>
     </div>` : ""}`)}
 
   ${section("What we claimed — and what happened", `
     ${d.verdict.hypotheses.map(h => `<article class="hyp-block">
-      <blockquote class="hyp"><p class="hyp-statement">${esc(h.statement)}</p></blockquote>
+      <blockquote class="hyp"><p class="hyp-statement"><span class="hyp-id mono">${esc(h.id)}</span> ${esc(h.statement)}</p></blockquote>
       <div class="verdict-line">
         ${chip(h.verdict)}
         <p class="verdict-refs mono">decided by ${esc((h.evidence_refs || []).join(" · "))}</p>
@@ -190,9 +202,9 @@ function render() {
       ${d.readiness.scenarios.map(s => `<tr><td>${esc(s.id)}</td><td>${esc(s.characteristic)}</td><td>${statusChip(s.status)}</td></tr>`).join("")}
     </tbody></table>
     <div class="diffusion">
-      <p class="diff-head mono">WHO CAN ADOPT THIS TODAY — ${esc(d.readiness.diffusion.suitable_for.toUpperCase())}</p>
+      <p class="diff-head mono">WHO CAN ADOPT THIS TODAY — ${esc(d.readiness.diffusion.suitable_for)}</p>
       <p class="diff-chips">${d.readiness.diffusion.scores.map(s => diffChip(s.attribute, s.score)).join(" ")}</p>
-      ${d.readiness.diffusion.chasm_blockers && d.readiness.diffusion.chasm_blockers.length ? `<p class="chasm">What would have to change before most teams should adopt it: <strong>${esc(d.readiness.diffusion.chasm_blockers.join(", "))}</strong></p>` : ""}
+      ${d.readiness.diffusion.chasm_blockers && d.readiness.diffusion.chasm_blockers.length ? `<p class="chasm">What would have to change before most teams should adopt it: <strong>${esc(d.readiness.diffusion.chasm_blockers.map(b => DIFF_NAMES[b] || b).join(", "))}</strong></p>` : ""}
     </div>`)}
 
   ${section("The story", `
@@ -225,7 +237,7 @@ function render() {
     <p><strong>${esc(d.audience.who_is_this_for)}</strong></p>
     <p><strong>Not for:</strong> ${esc(d.audience.not_for)}</p>`)}
 
-  ${section("The evidence", evTable(d.evidence))}
+  ${section("The evidence", evTable(d.evidence, d.repo.links.evidence))}
 
   ${section("Dig deeper", digDeeper(d.repo.links))}`;
 
@@ -240,6 +252,7 @@ const key = "artifact-ink";
 try { if (localStorage.getItem(key) === "1") body.classList.add("ink"); } catch (e) {}
 $("#toggle").addEventListener("click", () => {
   body.classList.toggle("ink");
+  $("#toggle").setAttribute("aria-pressed", body.classList.contains("ink") ? "true" : "false");
   try { localStorage.setItem(key, body.classList.contains("ink") ? "1" : "0"); } catch (e) {}
 });
 </script>
