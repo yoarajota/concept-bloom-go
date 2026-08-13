@@ -62,6 +62,35 @@ session. This is the only state that survives a session boundary.
 Report: what changed, which gate state moved, and whether any readiness level went **down**.
 A dropped level is a normal outcome and is stated plainly, never hidden.
 
+## Commit messages
+
+History is part of the public record — it is read like the README. Format:
+
+```
+<type>: <summary>
+```
+
+One line, no trailing period, no tooling or process names. Cite the stable ID when the
+change has one; the message points at the record, it does not re-narrate it.
+
+| type | when | example |
+| :--- | :--- | :--- |
+| `evidence:` | adding or changing an `E-###` entry | `evidence: E-004 depth sweep — crossover at ~100` |
+| `decision:` | adding or changing an ADR | `decision: D-001 query building and cursor representation` |
+| `theory:` | `docs/01-theory.md`, `SRC-###` ledger | `theory: SRC-004 false-positive derivation` |
+| `src:` `tests:` `bench:` | implementation, tests, benchmarks | `bench: hold filter costs inside the measured path` |
+| `artifact:` | curated narrative or generated artifact | `artifact: blogpost voice, p95 glossed` |
+| `docs:` | README, log, other documents | `docs: limitations — mixed-direction sort restriction` |
+| `fix:` `chore:` | bug fixes; CI, tooling, housekeeping | `fix: page number check on empty cursor` |
+
+Rules:
+
+- One concern per commit. A commit that fixes a bug *and* rewrites the README is two commits.
+- No mentions of assistants, AI, or tooling — the history is the project's own.
+- No process-state messages ("finished phase X") — commit content, not progress.
+- Messages must stay true forever. If a later commit reverses one, the history itself
+  shows it; never edit or rewrite published history to hide it.
+
 ## Stable IDs used in this repository
 
 | Prefix | Meaning | Lives in |
