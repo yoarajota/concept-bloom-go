@@ -64,32 +64,37 @@ A dropped level is a normal outcome and is stated plainly, never hidden.
 
 ## Commit messages
 
-History is part of the public record — it is read like the README. Format:
+History is part of the public record — it is read like the README. Commits follow
+[Conventional Commits 1.0.0](https://www.conventionalcommits.org/en/v1.0.0/):
 
 ```
-<type>: <summary>
+<type>[optional scope][!]: <description>
+
+[optional body]
+
+[optional footer(s)]
 ```
 
-One line, no trailing period, no tooling or process names. Cite the stable ID when the
-change has one; the message points at the record, it does not re-narrate it.
+- `feat:` a new capability in the public surface; `fix:` a bug fix; `docs:` README,
+  theory, evidence entries, ADRs, and the artifact narrative/page; `perf:` benchmarks
+  and anything touching measured performance; `test:` the test suite; `refactor:`
+  behaviour-preserving restructuring; `build:` build tooling; `ci:` CI configuration;
+  `chore:` everything else. Other types may be used when they fit better.
+- A scope is optional and names the part: `feat(core):`, `fix(pagination):`.
+- Breaking changes to the public surface get `!` after type/scope, or a
+  `BREAKING CHANGE:` footer.
+- Description in imperative mood, lowercase, no trailing period:
+  `fix: guard page number against empty cursor`.
 
-| type | when | example |
-| :--- | :--- | :--- |
-| `evidence:` | adding or changing an `E-###` entry | `evidence: E-004 depth sweep — crossover at ~100` |
-| `decision:` | adding or changing an ADR | `decision: D-001 query building and cursor representation` |
-| `theory:` | `docs/01-theory.md`, `SRC-###` ledger | `theory: SRC-004 false-positive derivation` |
-| `src:` `tests:` `bench:` | implementation, tests, benchmarks | `bench: hold filter costs inside the measured path` |
-| `artifact:` | curated narrative or generated artifact | `artifact: blogpost voice, p95 glossed` |
-| `docs:` | README, log, other documents | `docs: limitations — mixed-direction sort restriction` |
-| `fix:` `chore:` | bug fixes; CI, tooling, housekeeping | `fix: page number check on empty cursor` |
+Overlay rules for this repository:
 
-Rules:
-
+- Cite the stable ID when the change has one — the message points at the record,
+  it does not re-narrate it: `docs: add E-004 depth sweep`, `test: cover E-003
+  failure modes`, `docs: D-001 query building decision`.
 - One concern per commit. A commit that fixes a bug *and* rewrites the README is two commits.
 - No mentions of assistants, AI, or tooling — the history is the project's own.
 - No process-state messages ("finished phase X") — commit content, not progress.
-- Messages must stay true forever. If a later commit reverses one, the history itself
-  shows it; never edit or rewrite published history to hide it.
+- Never rewrite published history to hide a reversal; the history itself shows it.
 
 ## Stable IDs used in this repository
 
