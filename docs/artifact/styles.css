@@ -195,6 +195,7 @@ main { max-width: 46rem; margin: 0 auto; padding: 0 clamp(1rem, 4vw, 3rem); }
 .chip.falsified { background: var(--bad); color: var(--paper); }
 .chip.untested { border: 1px dashed var(--idle); color: var(--idle); }
 .chip.state { background: var(--panel); color: var(--idle); border: 1px solid var(--idle); }
+.chip.active { background: var(--muted); color: var(--paper); }
 
 .chip-small { font-size: 0.64rem; padding: 0.4em 0.8em; }
 .status-pass { background: var(--ok-soft); color: var(--ok); }
