@@ -8,7 +8,7 @@ pitch:
 headline:
   - text: "The Bloom pre-check was slower than plain sync.Map at every measured concurrency level: from +0.9% at 1 goroutine to +24.6% at 8"
     evidence: "E-003"
-  - text: "The required 20% improvement never appeared — the measured result was 6–25% slower, which is the falsification condition met in the negative"
+  - text: "The required 20% improvement never showed up — instead the pre-check measured 6–25% slower, the clean opposite of the hypothesis"
     evidence: "E-003"
   - text: "The filter itself was built correctly: observed false-positive rate 0.0101 against 0.0100 predicted — the premise was wrong, not the implementation"
     evidence: "E-002"
@@ -25,7 +25,7 @@ journey:
     summary: "The proof of concept confirmed the filter itself was correct — observed false-positive rate 0.0101 against 0.0100 predicted (E-002) — which is what made the later falsification informative: the implementation was not the failure."
   - phase: "Component"
     title: "Hardened, so the measurement could not be blamed on the code"
-    summary: "The pre-check became a real component with conformance tests and a quality gate. The benchmark was written to hold the filter's costs — per-insertion hashing, the bit array — fully inside the measured path."
+    summary: "The pre-check became a real component, tested against the same conformance suite and correctness checks as production code — so the coming benchmark couldn't be blamed on a shortcut in the implementation. The benchmark was written to hold the filter's costs — per-insertion hashing, the bit array — fully inside the measured path."
   - phase: "Evidence"
     title: "The premise died cleanly"
     summary: "The benchmark measured mean nanoseconds per operation across 1–32 goroutines: plain sync.Map won at every point, by 0.9% to 24.6%. Go 1.22's miss path for absent keys is mostly atomic reads and rarely takes the lock — the contention the Bloom filter existed to avoid was never the cost driver. The claim was falsified, in the negative, at every combination measured."
@@ -44,7 +44,7 @@ dead_ends:
 limitations:
   baseline_wins: "The baseline wins everywhere measured: plain sync.Map Load was 0.9–24.6% faster than the pre-check across 1–32 goroutines (E-003). The incumbent's miss path was already cheaper than the optimisation proposed to improve it."
   untested: "Single-machine measurement on a laptop. NUMA-scaled servers might change the picture, but the trend — the overhead grows with goroutines — points the wrong way. Go 1.24 replaced sync.Map internals with a lock-free hash trie map; this work targets Go ≤ 1.23."
-  next_level: "The concept is falsified and stops at readiness level 4 (validated in a lab environment) — no further levels are claimable. A future revisit would need the Go 1.24 sync.Map internals as the new baseline before any Bloom claim could be made."
+  next_level: "The concept stops here: falsified in a lab benchmark, not a production one, and there is no next measurement to run on this premise — only a different premise, once Go 1.24's rewritten sync.Map lands as the new baseline."
   structural: "Finite filter sizes keep the false-positive rate within 2x of the analytical prediction, not exact. A Bloom pre-check always pays hashing cost per lookup — which is the entire reason the concept lost."
 
 audience:
