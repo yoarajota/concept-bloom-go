@@ -1,0 +1,56 @@
+goos: linux
+goarch: amd64
+pkg: github.com/yoarajota/concept-bloom-go/bench
+cpu: 13th Gen Intel(R) Core(TM) i7-13650HX
+BenchmarkPlainMap_1g-6    	34618053	        34.03 ns/op	       4 B/op	       0 allocs/op
+BenchmarkPlainMap_1g-6    	38278288	        53.24 ns/op	       5 B/op	       0 allocs/op
+BenchmarkPlainMap_1g-6    	31159989	        36.20 ns/op	       4 B/op	       0 allocs/op
+BenchmarkPlainMap_1g-6    	21664422	        53.70 ns/op	       6 B/op	       0 allocs/op
+BenchmarkPlainMap_1g-6    	53469912	        35.08 ns/op	       4 B/op	       0 allocs/op
+BenchmarkBloomMap_1g-6    	67790413	        33.69 ns/op	       2 B/op	       0 allocs/op
+BenchmarkBloomMap_1g-6    	73678198	        52.55 ns/op	       4 B/op	       0 allocs/op
+BenchmarkBloomMap_1g-6    	75844365	        43.55 ns/op	       3 B/op	       0 allocs/op
+BenchmarkBloomMap_1g-6    	66483121	        51.16 ns/op	       4 B/op	       0 allocs/op
+BenchmarkBloomMap_1g-6    	80327973	        82.15 ns/op	       7 B/op	       0 allocs/op
+BenchmarkPlainMap_4g-6    	66239899	        15.32 ns/op	       0 B/op	       0 allocs/op
+BenchmarkPlainMap_4g-6    	72321502	        14.68 ns/op	       0 B/op	       0 allocs/op
+BenchmarkPlainMap_4g-6    	86288803	        12.79 ns/op	       0 B/op	       0 allocs/op
+BenchmarkPlainMap_4g-6    	87401018	        14.80 ns/op	       0 B/op	       0 allocs/op
+BenchmarkPlainMap_4g-6    	75753466	        13.44 ns/op	       0 B/op	       0 allocs/op
+BenchmarkBloomMap_4g-6    	78503256	        16.25 ns/op	       0 B/op	       0 allocs/op
+BenchmarkBloomMap_4g-6    	82321611	        14.43 ns/op	       0 B/op	       0 allocs/op
+BenchmarkBloomMap_4g-6    	79861573	        14.98 ns/op	       0 B/op	       0 allocs/op
+BenchmarkBloomMap_4g-6    	82949248	        15.30 ns/op	       0 B/op	       0 allocs/op
+BenchmarkBloomMap_4g-6    	78875222	        15.32 ns/op	       0 B/op	       0 allocs/op
+BenchmarkPlainMap_8g-6    	116738222	        10.69 ns/op	       0 B/op	       0 allocs/op
+BenchmarkPlainMap_8g-6    	106542850	        11.11 ns/op	       0 B/op	       0 allocs/op
+BenchmarkPlainMap_8g-6    	102178411	        13.22 ns/op	       0 B/op	       0 allocs/op
+BenchmarkPlainMap_8g-6    	90430468	        12.83 ns/op	       0 B/op	       0 allocs/op
+BenchmarkPlainMap_8g-6    	105405746	        12.04 ns/op	       0 B/op	       0 allocs/op
+BenchmarkBloomMap_8g-6    	88023325	        16.26 ns/op	       0 B/op	       0 allocs/op
+BenchmarkBloomMap_8g-6    	90151828	        13.83 ns/op	       0 B/op	       0 allocs/op
+BenchmarkBloomMap_8g-6    	72462362	        14.16 ns/op	       0 B/op	       0 allocs/op
+BenchmarkBloomMap_8g-6    	87549312	        14.11 ns/op	       0 B/op	       0 allocs/op
+BenchmarkBloomMap_8g-6    	90972405	        13.75 ns/op	       0 B/op	       0 allocs/op
+BenchmarkPlainMap_16g-6   	112249668	        10.16 ns/op	       0 B/op	       0 allocs/op
+BenchmarkPlainMap_16g-6   	112609909	        11.63 ns/op	       0 B/op	       0 allocs/op
+BenchmarkPlainMap_16g-6   	99268153	        10.34 ns/op	       0 B/op	       0 allocs/op
+BenchmarkPlainMap_16g-6   	102322552	        11.24 ns/op	       0 B/op	       0 allocs/op
+BenchmarkPlainMap_16g-6   	113626183	        11.97 ns/op	       0 B/op	       0 allocs/op
+BenchmarkBloomMap_16g-6   	87158564	        13.15 ns/op	       0 B/op	       0 allocs/op
+BenchmarkBloomMap_16g-6   	79788565	        13.77 ns/op	       0 B/op	       0 allocs/op
+BenchmarkBloomMap_16g-6   	83687931	        12.83 ns/op	       0 B/op	       0 allocs/op
+BenchmarkBloomMap_16g-6   	85101112	        13.56 ns/op	       0 B/op	       0 allocs/op
+BenchmarkBloomMap_16g-6   	92469212	        12.93 ns/op	       0 B/op	       0 allocs/op
+BenchmarkPlainMap_32g-6   	104955619	        11.91 ns/op	       0 B/op	       0 allocs/op
+BenchmarkPlainMap_32g-6   	113569964	        10.28 ns/op	       0 B/op	       0 allocs/op
+BenchmarkPlainMap_32g-6   	119633473	        10.23 ns/op	       0 B/op	       0 allocs/op
+BenchmarkPlainMap_32g-6   	112912422	        11.53 ns/op	       0 B/op	       0 allocs/op
+BenchmarkPlainMap_32g-6   	85560830	        12.74 ns/op	       0 B/op	       0 allocs/op
+BenchmarkBloomMap_32g-6   	86482734	        13.98 ns/op	       0 B/op	       0 allocs/op
+BenchmarkBloomMap_32g-6   	100628702	        11.54 ns/op	       0 B/op	       0 allocs/op
+BenchmarkBloomMap_32g-6   	98932933	        11.97 ns/op	       0 B/op	       0 allocs/op
+BenchmarkBloomMap_32g-6   	100000000	        12.19 ns/op	       0 B/op	       0 allocs/op
+BenchmarkBloomMap_32g-6   	100000000	        12.15 ns/op	       0 B/op	       0 allocs/op
+PASS
+ok  	github.com/yoarajota/concept-bloom-go/bench	105.631s

@@ -18,6 +18,8 @@ from primary sources (docs/01-theory.md). TRL 1.
 
 **Environment:** Any machine with a web browser. No runtime.
 
+**Kind:** survey
+
 ```bash
 # The search that produced the source list below:
 # 1. Searched: "bloom filter optimal k formula" → Broder & Mitzenmacher (SRC-003)
@@ -46,6 +48,8 @@ that avoids Load() on absent keys (docs/01-theory.md § 1). TRL 2–3.
 
 **Environment:** Go 1.22.2, Linux amd64, 13th Gen Intel i7-13650HX.
 
+**Kind:** test
+
 ```bash
 go test ./bench/... -run TestFPR -v
 ```
@@ -67,9 +71,14 @@ go vet, staticcheck, gitleaks, govulncheck). Architecture decisions documented i
 under read-heavy concurrent access across 1–32 goroutines with a background writer maintaining
 the dirty map. Hypothesis H-001 is falsified.
 
-**Environment:** Go 1.22.2, Linux amd64, 13th Gen Intel i7-13650HX, 100k pre-populated keys,
+**Environment:** Go 1.22.2, Linux amd64, 100k pre-populated keys,
 1% Bloom filter false-positive rate (m=958,506, k=7), background writer inserting keys
-continuously.
+continuously. Data re-generated on an Intel Xeon E5-2680 v4 (see Data file) — the claim
+held on both machines.
+
+**Kind:** benchmark
+
+**Data:** evidence-data/E-003-bench.txt (sha256: 98e085c4a6f14983c5652b5f4a871d2d5ceda73caa018e4a802513536f1de8b8)
 
 ```bash
 go test ./bench/... -bench=. -benchmem -count=5 -benchtime=1s
@@ -79,22 +88,11 @@ go test ./bench/... -bench=. -benchmem -count=5 -benchtime=1s
 
 | Goroutines | Plain sync.Map | BloomMap | Bloom / Plain |
 | :--- | :-: | :-: | :-: |
-| 1 | 61.74 ns | 62.28 ns | +0.9% (slower) |
-| 4 | 23.39 ns | 27.59 ns | +18.0% (slower) |
-| 8 | 18.07 ns | 22.52 ns | +24.6% (slower) |
-| 16 | 17.01 ns | 18.11 ns | +6.5% (slower) |
-| 32 | 15.89 ns | 18.68 ns | +17.6% (slower) |
-
-The Bloom filter pre-check is consistently slower than plain sync.Map at every goroutine
-count tested. The hypothesis predicted ≥20% improvement at ≥16 goroutines; the observed
-result is a 6–25% penalty.
-
-**Analysis:** sync.Map's internal miss path (Go 1.22) is already highly optimised: atomic
-reads on the `read` map, and the mutex is only acquired when a dirty map exists. Even with a
-background writer creating a dirty map, the per-miss cost of double hashing (maphash) plus
-bit-array probing exceeds the atomic operations and infrequent mutex acquisition of the
-sync.Map miss path. The Bloom filter overhead is a constant factor that dominates the
-variable-contention savings at the concurrency levels reachable on a single machine.
+| 1 | 42.45 ns | 52.62 ns | +24.0% (slower) |
+| 4 | 14.21 ns | 15.26 ns | +7.4% (slower) |
+| 8 | 11.98 ns | 14.42 ns | +20.4% (slower) |
+| 16 | 11.07 ns | 13.25 ns | +19.7% (slower) |
+| 32 | 11.34 ns | 12.37 ns | +9.1% (slower) |
 
 **Status:** reproducing
 **Supports:** H-001 (falsified), S-001 (fail), S-002 (pass)
@@ -121,7 +119,7 @@ variable-contention savings at the concurrency levels reachable on a single mach
 
 ## Benchmark methodology
 
-Filled at P5. Applies to every entry tagged as a benchmark.
+Filled at P5. Applies to every entry with `Kind: benchmark`.
 
 - **What is measured:** Mean ns/op (Go benchmark runner) for sync.Map.Load() absent-key
   operations, comparing plain sync.Map vs BloomMap (Bloom filter pre-check enabled).
