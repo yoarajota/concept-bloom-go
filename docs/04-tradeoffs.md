@@ -1,6 +1,6 @@
 # Tradeoff analysis — Bloom filter pre-check in Go sync.Map miss latency
 
-ATAM-lite, produced at P4. Method: `framework/instruments/atam-lite.md`.
+ATAM-lite, produced at P4.
 
 ## 1. Drivers
 

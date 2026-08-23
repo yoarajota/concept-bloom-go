@@ -2,8 +2,7 @@
 
 > What is the crossover point where a Bloom filter pre-check in Go's sync.Map reduces miss latency under read-heavy concurrent access?
 
-**Concept** `C-002` · **archetype** `implementation` · assessed with the
-[SOTA framework](https://github.com/yoarajota/sota-theoretical-framework).
+**Concept** `C-002` · **archetype** `implementation`.
 
 Measures whether a Bloom filter pre-check reduces miss latency in Go's sync.Map under
 read-heavy concurrent access, by probing the exact combination of goroutine count, miss rate,
@@ -33,7 +32,7 @@ path in the Go standard library, not a strawman. Reproduce the comparison:
 
 ### Readiness scorecard
 
-_Auto-generated. Do not hand-edit._
+_Generated from `.sota/` — do not hand-edit._
 
 | Measure | Value | Meaning |
 | :--- | :--- | :--- |

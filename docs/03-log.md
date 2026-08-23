@@ -3,9 +3,9 @@
 Append-only. **Never edit an existing entry**; add a new one that supersedes it. This is the
 only artefact in the repository that records work *in progress*, and it is deliberately narrow.
 
-`sota.py next` prints every entry still `open`, so this file is how one session tells the next
-one what was in flight. That is its primary job — write to it before you run out of context,
-not after.
+Open entries are printed as handoff state to the next session, so this file is how one session
+tells the next what was in flight. That is its primary job — write to it before you run out of
+context, not after.
 
 ## What belongs here — and what does not
 
@@ -16,7 +16,7 @@ Most work-in-progress knowledge already has a home. Use the table before writing
 | A measurement, even a disappointing one — it has a command and a result | `docs/05-evidence.md` as an `E-###` with the claim it refuted |
 | A choice between real alternatives | `docs/adr/D-###` — the rejected options table exists for this |
 | A bound on when the concept degrades | `README.md § Limitations` |
-| A second concept worth its own repository | the framework's `registry/backlog.md` |
+| A second concept worth its own repository | the shared backlog |
 | **No decision made and no reproducible command** — a surprise, a blind alley, an abandoned attempt | **here** |
 | **Work half-finished right now** | **here, as `Disposition: open`** |
 
@@ -29,7 +29,7 @@ not the repository. This file records findings, not files.
 ## Entry format
 
 Headings must be exactly `### L-###  —  YYYY-MM-DD  —  <short title>`, and every entry needs a
-`Disposition:` line. `sota.py validate` parses both.
+`Disposition:` line. Both are parsed by the gate checks.
 
 | Disposition | Means |
 | :--- | :--- |
@@ -44,10 +44,7 @@ that stops this file becoming a pile — and unlike most promotion rules, it is 
 
 ---
 
-<!-- No entries yet. `sota.py next` reports open entries as in-flight work, so this file
-     deliberately starts empty — a placeholder entry here would report fake state on day one.
-
-     Copy this shape for the first real entry:
+<!-- No entries yet. The first real entry goes here. Copy this shape:
 
 ### L-001 — 2026-08-10 — short title
 
