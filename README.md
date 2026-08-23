@@ -38,12 +38,10 @@ _Generated from `.sota/` — do not hand-edit._
 | :--- | :--- | :--- |
 | **TRL** | **4** | Component validated in lab |
 | **SRL**  | **3** | High-risk immature technologies identified and prototyped — seams only |
-| Composite SRL | 0.370 | standard formulation (all components, diagonal-inclusive) |
+| Composite SRL | 0.370 | aggregate over all components (0–1) |
 | Weakest component | core (0.3333) | lowest component-level SRL |
 | Weakest seam | core<->host (IRL 3) | lowest-scoring integration pair |
-| Phase | P6 | |
-| Hypothesis | falsified | |
-| Suitable for | none-yet | |
+| Suitable for | none-yet | audience for which this result is ready |
 
 | Component | Role | TRL | Component SRL |
 | :--- | :--- | :-: | :-: |
