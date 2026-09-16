@@ -15,8 +15,8 @@
     "repo_url": "https://github.com/yoarajota/concept-bloom-go",
     "created": "2026-08-10",
     "updated": "2026-08-10",
-    "generated_at": "2026-08-23",
-    "input_digest": "b9549672f9c9c9d7"
+    "generated_at": "2026-09-16",
+    "input_digest": "90dde522b1194f4a"
   },
   "pitch": {
     "one_line_answer": "Falsified: the Bloom filter pre-check was slower than plain sync.Map at every concurrency level measured (1–32 goroutines) — Go's sync.Map miss path was already cheaper than the filter's overhead.",

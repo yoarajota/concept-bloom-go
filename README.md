@@ -32,7 +32,7 @@ path in the Go standard library, not a strawman. Reproduce the comparison:
 
 ### Readiness scorecard
 
-_Generated from `.sota/` — do not hand-edit._
+_Machine-generated from this repository's readiness data — do not hand-edit._
 
 | Measure | Value | Meaning |
 | :--- | :--- | :--- |

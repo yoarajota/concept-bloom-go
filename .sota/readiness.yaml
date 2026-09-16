@@ -65,6 +65,6 @@ computed:
     host: 0.4074
   weakest_component: core (0.3333)
   weakest_integration: core<->host (IRL 3)
-  generated_at: '2026-08-10'
-  generator: tools/sota.py srl
+  generated_at: '2026-09-16'
+  generator: auto-generated
   input_digest: aeedddcb03799861
